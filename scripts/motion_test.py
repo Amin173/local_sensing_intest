@@ -4,7 +4,7 @@ Python script used to control the vibration robot (pink)
 """
 
 ####################################################
-from Utils import UtilFunctions
+from local_sensing_intest.Utils import UtilFunctions
 
 import matplotlib.pyplot as plt
 import rospy
