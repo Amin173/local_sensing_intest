@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+
+<launch>
+
+
+    <arg name="num_of_bots" default="12"/>
+
+    <!-- Map server -->
+    <arg name="map_file" default="$(find local_sensing_intest)/map/map.yaml"/>
+    <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)"/>
+    <node name="map_point_cloud" pkg="local_sensing_intest" type="grid_to_pointcloud2.py"/>
+
+    <!--     Set initial pose using AprilTags -->
+    <node name="set_initial_pose" pkg="local_sensing_intest" type="initial_pose_from_apriltags.py" respawn="false"/>
+
+    <!-- PointCloud -->
+    <node name="point_cloud2_broadcaster" pkg="local_sensing_intest" type="point_cloud2_broadcaster.py" respawn="true"
+          output="screen" args="$(arg num_of_bots)"/>
+
+    <!-- Controller -->
+    <!--    add delay to motion_planner!-->
+    <node pkg="local_sensing_intest" name="motion_planner" type="motion_planner.py" args="$(arg num_of_bots)"
+          output="screen"/>
+<!--    <node pkg="local_sensing_intest" name="vacuum" type="motion_test.py" args="vac" respawn="true"/>-->
+    <param name="engulfed" type="bool" value="True" />
+
+
+    <!--    Rviz-->
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find local_sensing_intest)/rviz/config_file.rviz"
+          respawn="true"/>
+
+    <!--    Record data-->
+    <node pkg="rosbag" type="record"
+          args="-o /home/amin/catkin_ws/src/local_sensing_intest/bags/ bot00/imu/data bot00/dist/data bot01/imu/data
+                  bot01/dist/data bot02/imu/data bot02/dist/data bot03/imu/data bot03/dist/data bot04/imu/data bot04/dist/data
+                  bot05/imu/data bot05/dist/data bot06/imu/data bot06/dist/data bot07/imu/data bot07/dist/data bot08/imu/data
+                  bot08/dist/data bot09/imu/data bot09/dist/data bot10/imu/data bot10/dist/data bot11/imu/data bot11/dist/data
+                  state map tf cloud2 control_cmd locomotion_stats"
+          name="record"/>
+
+</launch>

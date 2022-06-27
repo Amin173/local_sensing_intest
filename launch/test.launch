@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+
+    <arg name="num_of_bots" default="10"/>
+    <arg name="num_of_tags" default="14"/>
+
+        <!--     AprilTag -->
+    <node name="get_apriltag_data" pkg="local_sensing_intest" type="apriltag_pose_broadcaster.py" respawn="false"
+          args="$(arg num_of_tags)"/>
+
+    <!-- Communication with bots -->
+    <include file="$(find local_sensing_intest)/launch/tcp.launch"/>
+
+        <!-- Transforms -->
+    <include file="$(find local_sensing_intest)/launch/transforms.launch"/>
+
+    <!-- PointCloud -->
+    <node name="point_cloud_broadcaster" pkg="local_sensing_intest" type="point_cloud_broadcaster.py" respawn="true"
+          output="screen" args="$(arg num_of_bots)"/>
+
+
+</launch>

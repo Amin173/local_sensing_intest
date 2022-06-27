@@ -1,0 +1,9 @@
+/home/amin/Arduino/temp_test/ROSJAMOEBA/apriltags3py/apriltags/CMakeFiles/install/local.dir
+/home/amin/Arduino/temp_test/ROSJAMOEBA/apriltags3py/apriltags/CMakeFiles/install.dir
+/home/amin/Arduino/temp_test/ROSJAMOEBA/apriltags3py/apriltags/CMakeFiles/apriltag_demo.dir
+/home/amin/Arduino/temp_test/ROSJAMOEBA/apriltags3py/apriltags/CMakeFiles/edit_cache.dir
+/home/amin/Arduino/temp_test/ROSJAMOEBA/apriltags3py/apriltags/CMakeFiles/apriltag.dir
+/home/amin/Arduino/temp_test/ROSJAMOEBA/apriltags3py/apriltags/CMakeFiles/install/strip.dir
+/home/amin/Arduino/temp_test/ROSJAMOEBA/apriltags3py/apriltags/CMakeFiles/opencv_demo.dir
+/home/amin/Arduino/temp_test/ROSJAMOEBA/apriltags3py/apriltags/CMakeFiles/rebuild_cache.dir
+/home/amin/Arduino/temp_test/ROSJAMOEBA/apriltags3py/apriltags/CMakeFiles/list_install_components.dir

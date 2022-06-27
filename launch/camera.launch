@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<launch>
+
+    <arg name="num_of_tags" default="13"/>
+
+    <!--     AprilTag -->
+    <node name="get_apriltag_data" pkg="local_sensing_intest" type="apriltag_pose_broadcaster.py" respawn="false"
+          args="$(arg num_of_tags)"/>
+    <!--        <node name="fake_apriltag_data" pkg="local_sensing_intest" type="fake_apriltag_data.py" output="screen"-->
+    <!--              respawn="true"/>-->
+
+</launch>

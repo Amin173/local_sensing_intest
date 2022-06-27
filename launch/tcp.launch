@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+
+<launch>
+    <node name="tcp1" pkg="local_sensing_intest" type="tcp.py" args="00" output="screen"
+          respawn="true"/>
+    <node name="tcp2" pkg="local_sensing_intest" type="tcp.py" args="01" output="screen"
+          respawn="true"/>
+    <node name="tcp3" pkg="local_sensing_intest" type="tcp.py" args="02" output="screen"
+          respawn="true"/>
+    <node name="tcp4" pkg="local_sensing_intest" type="tcp.py" args="03" output="screen"
+          respawn="true"/>
+    <node name="tcp5" pkg="local_sensing_intest" type="tcp.py" args="04" output="screen"
+          respawn="true"/>
+    <node name="tcp6" pkg="local_sensing_intest" type="tcp.py" args="05" output="screen"
+          respawn="true"/>
+    <node name="tcp7" pkg="local_sensing_intest" type="tcp.py" args="06" output="screen"
+          respawn="true"/>
+    <node name="tcp8" pkg="local_sensing_intest" type="tcp.py" args="07" output="screen"
+          respawn="true"/>
+    <node name="tcp9" pkg="local_sensing_intest" type="tcp.py" args="08" output="screen"
+          respawn="true"/>
+    <node name="tcp10" pkg="local_sensing_intest" type="tcp.py" args="09" output="screen"
+          respawn="true"/>
+    <node name="tcp11" pkg="local_sensing_intest" type="tcp.py" args="10" output="screen"
+          respawn="true"/>
+    <node name="tcp12" pkg="local_sensing_intest" type="tcp.py" args="11" output="screen"
+          respawn="true"/>
+
+</launch>
