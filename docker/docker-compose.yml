@@ -1,0 +1,20 @@
+version: '3.5'
+
+services:
+
+  local_sensing_intest:
+    build:
+      context: .
+      args: 
+        - CACHBUST=""
+        - SSH_PRIVATE_KEY
+      network: host
+    volumes:
+      - /tmp/.X11-unix/:/tmp/.X11-unix/
+    environment:
+      - DISPLAY
+    network_mode: host
+    entrypoint: /ros_entrypoint.sh
+    command: >
+      bash -c "bash"
+    tty: true
