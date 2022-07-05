@@ -6,8 +6,7 @@ ARG OVERLAY_WS=/opt/ros/overlay_ws
 FROM $FROM_IMAGE AS updated
 
 RUN apt update -y && apt upgrade -y \
-    && apt autoremove -y && apt autoclean -y \
-    && apt-get -yqq install ssh 
+    && apt autoremove -y && apt autoclean -y
 
 FROM updated AS cacher
 
@@ -45,9 +44,12 @@ RUN mkdir -p /tmp/opt && \
 # template build container for multi-stage building
 FROM updated AS builder_temp
 
+COPY ./config.sh /
+
 # install catkin tools
 RUN apt update \
-    && apt install ros-$ROS_DISTRO-catkin python-catkin-tools python-osrf-pycommon -y\
+    && apt install ros-$ROS_DISTRO-catkin python-catkin-tools python-osrf-pycommon pip pip3-y \
+    && bash /config.sh
     && rm -rf /var/lib/apt/lists/*
 
 # final build container
