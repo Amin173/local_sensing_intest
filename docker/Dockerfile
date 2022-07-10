@@ -1,12 +1,13 @@
 # global args
-ARG FROM_IMAGE=osrf/ros:melodic-desktop
+ARG FROM_IMAGE=osrf/ros:noetic-desktop
 ARG OVERLAY_WS=/opt/ros/overlay_ws
 
 # multi-stage for caching
 FROM $FROM_IMAGE AS updated
 
 RUN apt update -y && apt upgrade -y \
-    && apt autoremove -y && apt autoclean -y
+    && apt-get -yqq install ssh \
+    && apt autoremove -y && apt autoclean -y 
 
 FROM updated AS cacher
 
@@ -20,7 +21,7 @@ RUN chmod 400 /root/.ssh/id_rsa
 RUN touch /root/.ssh/known_hosts
 RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 
-ARG CACHBUST=""
+ARG CACHBUST="2"
 
 # clone workspace source
 ARG OVERLAY_WS
@@ -44,12 +45,12 @@ RUN mkdir -p /tmp/opt && \
 # template build container for multi-stage building
 FROM updated AS builder_temp
 
-COPY ./config.sh /
+COPY ./config.bash /
 
 # install catkin tools
 RUN apt update \
-    && apt install ros-$ROS_DISTRO-catkin python-catkin-tools python-osrf-pycommon pip pip3-y \
-    && bash /config.sh
+    && apt install ros-$ROS_DISTRO-catkin python3-catkin-tools python3-osrf-pycommon -y \
+    && /bin/bash /config.bash \
     && rm -rf /var/lib/apt/lists/*
 
 # final build container
