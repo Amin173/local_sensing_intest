@@ -2,7 +2,7 @@
 
 #/bin/bash /home/amin/catkin_ws/src/local_sensing_intest/bash/rosplay.bash
 
-export path="/home/amin/catkin_ws/src/local_sensing_intest/bags/RA-L_data/maze4/2021-11-24_15h15/"
+export path="/opt/ros/overlay_ws/src/local_sensing_intest/bags/maze4/2021-11-24_14h26/"
 export parent=".."
 ls $path$parent
 export file="*.bag"
