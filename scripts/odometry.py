@@ -13,14 +13,9 @@ class odomBroadcaster:
     def __init__(self):
         self.num_of_bots = 12
         """Initial state"""
-        # x0, y0, th0 = [0, 0, 0]
-        # while x0 == 0 or y0 == 0 or th0 == 0:
-        #     x0 = float(rospy.get_param('initial_pose_x'))
-        #     y0 = float(rospy.get_param('initial_pose_y'))
-        #     th0 = float(rospy.get_param('initial_pose_a'))
-        x0 = 1.62996120803
-        y0 = 0.898038998129
-        th0 = 1.4646557375302942
+        x0 = float(rospy.get_param('initial_pose/x'))
+        y0 = float(rospy.get_param('initial_pose/y'))
+        th0 = float(rospy.get_param('initial_pose/a'))
 
         self.x = x0
         self.y = y0

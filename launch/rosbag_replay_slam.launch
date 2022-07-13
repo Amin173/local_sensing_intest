@@ -2,18 +2,12 @@
 
 <launch>
 
-    <arg name="map_file" default="-f /home/amin/catkin_ws/src/local_sensing_intest/map/slam/map4"/>
-
     <arg name="num_of_bots" default="12"/>
-    <param name="initial_pose_x" type="double" value="0"/>
-    <param name="initial_pose_y" type="double" value="0"/>
-    <param name="initial_pose_a" type="double" value="0"/>
+
+    <rosparam command="load" file="$(find local_sensing_intest)/config/config.yml" />
 
     <!--     Transorms -->
     <include file="$(find local_sensing_intest)/launch/transforms_replay.launch"/>
-
-    <!--     Set initial pose using AprilTags -->
-    <node name="set_initial_pose" pkg="local_sensing_intest" type="initial_pose_from_apriltags.py" respawn="false"/>
 
     <!-- Rosbag play -->
     <!--    <node pkg="rosbag" type="play" name="player" output="screen" args="&#45;&#45;clock $(env bag_file) -r 1"/>-->
@@ -51,7 +45,7 @@
           respawn="true"/>
 
     <!--    Save csv data-->
-    <node type="csv_saver.py" name="csv_saver" pkg="local_sensing_intest" respawn="true" output="screen"/>
+    <!-- <node type="csv_saver.py" name="csv_saver" pkg="local_sensing_intest" respawn="true" output="screen"/> -->
 
     <!--    Record data-->
     <!--    <node pkg="rosbag" type="record"-->

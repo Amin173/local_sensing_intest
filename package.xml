@@ -50,6 +50,7 @@
     <depend>robot_localization</depend>
     <depend>turtlesim</depend>
     <depend>pcl_ros</depend>
+    <depend>pointcloud_to_laserscan</depend>
     <build_depend>libpcl-all-dev</build_depend>
 <!--    <exec_depend>libpcl-all</exec_depend>-->
 

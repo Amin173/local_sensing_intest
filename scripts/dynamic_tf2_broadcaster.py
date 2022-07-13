@@ -12,11 +12,9 @@ from std_msgs.msg import String
 
 class Broadcaster:
     def __init__(self, bot_id, frame_id, origin_tag_id):
-        x0, y0, th0 = [0, 0, 0]
-        while x0 == 0 or y0 == 0 or th0 == 0:
-            x0 = float(rospy.get_param('initial_pose_x'))
-            y0 = float(rospy.get_param('initial_pose_y'))
-            th0 = float(rospy.get_param('initial_pose_a'))
+        x0 = float(rospy.get_param('initial_pose/x'))
+        y0 = float(rospy.get_param('initial_pose/y'))
+        th0 = float(rospy.get_param('initial_pose/a'))
         self.base_link_pose_x = x0
         self.base_link_pose_y = y0
         self.base_link_orientation = th0

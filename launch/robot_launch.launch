@@ -2,9 +2,9 @@
 
 <launch>
 
-    <param name="initial_pose_x" type="double" value="0"/>
-    <param name="initial_pose_y" type="double" value="0"/>
-    <param name="initial_pose_a" type="double" value="0"/>
+    <param name="initial_pose/x" type="double" value="0"/>
+    <param name="initial_pose/y" type="double" value="0"/>
+    <param name="initial_pose/a" type="double" value="0"/>
 
     <!-- Communication with bots -->
     <include file="$(find local_sensing_intest)/launch/tcp.launch"/>

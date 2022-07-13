@@ -19,17 +19,15 @@ class NNModel:
         self.num_of_bots = int(num_of_bots)
 
         self.origin_tag = origin_tag_id
-        x0, y0, th0 = [0, 0, 0]
-        while x0 == 0 or y0 == 0 or th0 == 0:
-            x0 = float(rospy.get_param('initial_pose_x'))
-            y0 = float(rospy.get_param('initial_pose_y'))
-            th0 = float(rospy.get_param('initial_pose_a'))
+        x0 = float(rospy.get_param('initial_pose/x'))
+        y0 = float(rospy.get_param('initial_pose/y'))
+        th0 = float(rospy.get_param('initial_pose/a'))
         self.base_link_pose_x = x0
         self.base_link_pose_y = y0
         self.base_link_orientation = th0
         self.rel_rotation_set = [False] * self.num_of_bots
         self.cam_trnsfrm_recieved = False
-        weight_path = '/home/amin/catkin_ws/src/local_sensing_intest/scripts/nn_weights/weights_Final.hdf5'
+        weight_path = '/opt/ros/overlay_ws/src/local_sensing_intest/scripts/nn_weights/weights_Final.hdf5'
         self.nn_model = load_model(weight_path)
         self.heading_angles = np.array([])
         self.br = tf2_ros.TransformBroadcaster()

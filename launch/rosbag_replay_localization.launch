@@ -10,9 +10,9 @@
     <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)"/>
 <!--    <node name="map_point_cloud" pkg="local_sensing_intest" type="grid_to_pointcloud2.py"/>-->
 
-    <param name="initial_pose_x" type="double" value="0"/>
-    <param name="initial_pose_y" type="double" value="0"/>
-    <param name="initial_pose_a" type="double" value="0"/>
+    <param name="initial_pose/x" type="double" value="0"/>
+    <param name="initial_pose/y" type="double" value="0"/>
+    <param name="initial_pose/a" type="double" value="0"/>
 
     <!--     Transorms -->
     <include file="$(find local_sensing_intest)/launch/transforms_replay.launch"/>

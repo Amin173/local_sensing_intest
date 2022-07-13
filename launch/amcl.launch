@@ -4,9 +4,9 @@
 
     <arg name="use_map_topic" default="false"/>
     <arg name="scan_topic" default="scan"/>
-    <arg name="initial_pose_x" default="1.62996120803"/>
-    <arg name="initial_pose_y" default="0.898038998129"/>
-    <arg name="initial_pose_a" default="1.4646557375302942"/>
+    <arg name="initial_pose/x" default="1.62996120803"/>
+    <arg name="initial_pose/y" default="0.898038998129"/>
+    <arg name="initial_pose/a" default="1.4646557375302942"/>
 
     <!--    AMCL localization-->
     <node pkg="amcl" type="amcl" name="amcl">
@@ -46,9 +46,9 @@
         <param name="transform_tolerance" value="0.01"/>
         <param name="recovery_alpha_slow" value="0.001"/>
         <param name="recovery_alpha_fast" value="0.1"/>
-        <param name="initial_pose_x" value="$(arg initial_pose_x)"/>
-        <param name="initial_pose_y" value="$(arg initial_pose_y)"/>
-        <param name="initial_pose_a" value="$(arg initial_pose_a)"/>
+        <param name="initial_pose/x" value="$(arg initial_pose/x)"/>
+        <param name="initial_pose/y" value="$(arg initial_pose/y)"/>
+        <param name="initial_pose/a" value="$(arg initial_pose/a)"/>
         <param name="tf_broadcast" value="ture"/>
         <!--        <remap from="bot00/scan" to="$(arg scan_topic)"/>-->
     </node>
