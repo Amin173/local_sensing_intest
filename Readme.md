@@ -13,9 +13,21 @@ For the container to be able to clone the private repository, you have to genera
 export SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa)"
 ```
 
-Additionally, make sure your `DISPLAY` parameter is set. This will allow the docker container to route its graphics to the host computer.
+Additionally, make sure your `DISPLAY` parameter is set. This will allow the docker container to route its graphics to the host computer. To give docker access to your display server run:
 
-Then clone the repository, and launch the docker container as follows:
+```sh 
+xhost +local:docker
+```
+
+You can revoke this permission afterwards by running:
+
+```sh
+xhost -local:docker
+```
+
+More information on the docker remote display can be found [here](http://wiki.ros.org/docker/Tutorials/GUI).
+
+Now clone the repository and launch the docker container as follows:
 
 ```sh
 git clone https://github.com/Amin173/local_sensing_intest
@@ -31,7 +43,7 @@ After the docker container is launched, you can lookup the container by running 
 docker exec -it <container_id> bash
 ```
 
-To run the ROS application run:
+To run the ROS application run the following commands inside the container:
 
 ```sh
 cd /opt/ros/overlay_ws
@@ -39,7 +51,7 @@ source devel/setup.bash
 /bin/bash ./src/local_sensing_intest/bash/slam.sh
 ```
 
-This should launch the application and RVIZ in your host computer.
+This should launch the application and RVIZ should show up in your host display.
 
 ## Remote containers
 
