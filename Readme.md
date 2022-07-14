@@ -1,4 +1,8 @@
-# Dependencies
+# local_sensing_intest
+
+A ROS package for the under-preparation paper "Localization, mapping, and control with a mobile soft robot based on boundary-constrained modular units".
+
+## Dependencies
 - [Docker](https://www.docker.com)
 
 # Installation
@@ -19,7 +23,7 @@ cd ./local_sensing_intest/docker
 docker compose up
 ```
 
-# Usage 
+## Usage 
 
 After the docker container is launched, you can lookup the container by running `docker ps`. Using the docker `container_id`, you can login to the container and use it as a remote server as follows:
 
@@ -37,6 +41,6 @@ source devel/setup.bash
 
 This should launch the application and RVIZ in your host computer.
 
-# Remote containers
+## Remote containers
 
 To make it easier to use docker containers, you can use the [remote container](https://code.visualstudio.com/docs/remote/containers) VSCode extention. This will launch a VSCode session inside your container, which gives you better access to the container file system and lets you directly edit the code using the VSCode from within the container.
