@@ -13,11 +13,11 @@ Additionally, make sure your `DISPLAY` parameter is set. This will allow the doc
 
 Then clone the repository, and launch the docker container as follows:
 
-'''sh
+```sh
 git clone https://github.com/Amin173/local_sensing_intest
 cd ./local_sensing_intest/docker
 docker compose up
-'''
+```
 
 # Usage 
 
