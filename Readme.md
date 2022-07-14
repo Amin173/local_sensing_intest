@@ -5,7 +5,7 @@ A ROS package for the under-preparation paper "Localization, mapping, and contro
 ## Dependencies
 - [Docker](https://www.docker.com)
 
-# Installation
+## Installation
 
 For the container to be able to clone the private repository, you have to generate and ssh key and add it to your github account as explained [here](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
 
