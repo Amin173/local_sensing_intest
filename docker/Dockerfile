@@ -11,15 +11,15 @@ RUN apt update -y && apt upgrade -y \
 
 FROM updated AS cacher
 
-ARG SSH_PRIVATE_KEY
-# add credentials on build
-RUN mkdir -p /root/.ssh/
-RUN echo "${SSH_PRIVATE_KEY}" > /root/.ssh/id_rsa
-RUN chmod 400 /root/.ssh/id_rsa
+# ARG SSH_PRIVATE_KEY
+# # add credentials on build
+# RUN mkdir -p /root/.ssh/
+# RUN echo "${SSH_PRIVATE_KEY}" > /root/.ssh/id_rsa
+# RUN chmod 400 /root/.ssh/id_rsa
 
-# make sure your domain is accepted
-RUN touch /root/.ssh/known_hosts
-RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
+# # make sure your domain is accepted
+# RUN touch /root/.ssh/known_hosts
+# RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 
 ARG CACHBUST="2"
 
@@ -32,7 +32,7 @@ RUN apt update && apt install git -y\
 RUN wstool init . ../pckgs.rosinstall 
 RUN wstool update -t . 
 
-RUN git clone git@github.com:Amin173/local_sensing_intest.git
+RUN git clone https://github.com/Amin173/local_sensing_intest.git
 
 # copy manifests for caching
 WORKDIR /opt
