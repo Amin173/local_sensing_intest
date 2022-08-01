@@ -45,12 +45,23 @@ RUN mkdir -p /tmp/opt && \
 # template build container for multi-stage building
 FROM updated AS builder_temp
 
-COPY ./config.bash /
-
 # install catkin tools
 RUN apt update \
-    && apt install ros-$ROS_DISTRO-catkin python3-catkin-tools python3-osrf-pycommon -y \
-    && /bin/bash /config.bash \
+    && apt install ros-$ROS_DISTRO-catkin python3-catkin-tools python3-osrf-pycommon python3-pip -y \
+    && apt upgrade python3-pip -y \
+    && python3 -m pip install -U pip \
+    && python3 -m pip install --upgrade setuptools pip \
+    && python3 -m pip install numpy \
+    && python3 -m pip install netifaces \
+    && python3 -m pip install pyparticleio \
+    && python3 -m pip install pandas \
+    && python3 -m pip install matplotlib \
+    && python3 -m pip install scikit-build \
+    && python3 -m pip install opencv-python \
+    && python3 -m pip install open3d --ignore-installed PyYAML \
+    && python3 -m pip install scipy \
+    && python3 -m pip install ruamel.yaml \
+    && python3 -m pip install pathlib \
     && rm -rf /var/lib/apt/lists/*
 
 # final build container
