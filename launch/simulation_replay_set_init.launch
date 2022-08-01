@@ -5,8 +5,16 @@
     <!--     Set initial pose using AprilTags -->
     <node name="set_initial_pose" pkg="local_sensing_intest" type="initial_pose_from_apriltags.py" required="true"/>
 
-    <!-- Rosbag play (Here the node reading the recorded data from simulation should start)-->
-    <!--    <node pkg="rosbag" type="play" name="player" output="screen" args="&#45;&#45;clock $(env bag_file) -r 1"/>-->
-    <!--<node pkg="rosbag" type="play" name="player" args="--><!--clock $(env bag_file)"/>-->
+    <arg name="num_of_bots" default="12"/>
+
+    <rosparam command="load" file="$(find local_sensing_intest)/config/config.yml" />
+
+    <!--     Transorms -->
+    <include file="$(find local_sensing_intest)/launch/transforms_replay.launch"/>
+
+    <!-- Map server -->
+    <arg name="map_file" default="$(find local_sensing_intest)/map/map.yaml"/>
+    <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)"/>
+    <node name="map_point_cloud" pkg="local_sensing_intest" type="grid_to_pointcloud2.py" output="screen"/>
 
 </launch>

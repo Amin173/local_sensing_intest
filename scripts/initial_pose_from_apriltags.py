@@ -6,10 +6,6 @@ from std_msgs.msg import String
 from ruamel.yaml import YAML
 from pathlib import Path
 import tf2_ros
-<<<<<<< HEAD
-
-=======
->>>>>>> ea3eafef6618ae75a87dee5f40d5f6e1d8598c89
 
 class InitialPose:
     def __init__(self):

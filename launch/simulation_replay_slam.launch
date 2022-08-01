@@ -4,16 +4,10 @@
 
     <arg name="num_of_bots" default="12"/>
 
-    <!-- Map server -->
-    <arg name="map_file" default="$(find local_sensing_intest)/map/map.yaml"/>
-    <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)"/>
-    <node name="map_point_cloud" pkg="local_sensing_intest" type="grid_to_pointcloud2.py"/>
+    <rosparam command="load" file="$(find local_sensing_intest)/config/config.yml" />
 
-    <!-- Rosbag play -->
-    <!--    <node pkg="rosbag" type="play" name="player" output="screen" args="&#45;&#45;clock $(env bag_file) -r 1"/>-->
-    <!--
-        <node pkg="rosbag" type="play" name="player" args="--><!--clock $(env bag_file)"/>
-    -->
+    <!--     Transorms -->
+    <include file="$(find local_sensing_intest)/launch/transforms_replay.launch"/>
 
     <!-- PointCloud -->
     <node name="point_cloud2_broadcaster" pkg="local_sensing_intest" type="point_cloud2_broadcaster_replay.py"
