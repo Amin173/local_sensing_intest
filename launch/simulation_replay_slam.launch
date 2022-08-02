@@ -2,12 +2,9 @@
 
 <launch>
 
-    <arg name="num_of_bots" default="12"/>
 
-    <rosparam command="load" file="$(find local_sensing_intest)/config/config.yml" />
-
-    <!--     Transorms -->
-    <include file="$(find local_sensing_intest)/launch/transforms_replay.launch"/>
+    <!--     Transorms (Not sure if needed now)-->
+    <!--<include file="$(find local_sensing_intest)/launch/transforms_replay.launch"/>-->
 
     <!-- PointCloud -->
     <node name="point_cloud2_broadcaster" pkg="local_sensing_intest" type="point_cloud2_broadcaster_replay.py"

@@ -9,4 +9,4 @@ export bag_file=$(find $path$file)
 
 roslaunch local_sensing_intest simulation_replay_set_init.launch
 
-#roslaunch local_sensing_intest simulation_replay_slam.launch
+roslaunch local_sensing_intest simulation_replay_slam.launch

@@ -1,6 +1,8 @@
 #!/bin/bash
 
 apt update
+apt install nano -y
+apt install git -y
 apt install python3-pip -y
 apt upgrade python3-pip -y 
 python3 -m pip install -U pip

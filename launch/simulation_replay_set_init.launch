@@ -9,9 +9,6 @@
 
     <rosparam command="load" file="$(find local_sensing_intest)/config/config.yml" />
 
-    <!--     Transorms -->
-    <include file="$(find local_sensing_intest)/launch/transforms_replay.launch"/>
-
     <!-- Map server -->
     <arg name="map_file" default="$(find local_sensing_intest)/map/map.yaml"/>
     <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)"/>
