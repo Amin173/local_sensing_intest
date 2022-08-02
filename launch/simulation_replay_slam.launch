@@ -2,7 +2,6 @@
 
 <launch>
 
-
     <!--     Transorms (Not sure if needed now)-->
     <!--<include file="$(find local_sensing_intest)/launch/transforms_replay.launch"/>-->
 
@@ -33,9 +32,7 @@
     <node name="imu_frame_conversion" pkg="local_sensing_intest" type="imu_frame_conversion.py" respawn="true" args="12"
           output="screen"/>
 
-    <!--    Rviz-->
-    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find local_sensing_intest)/rviz/config_file.rviz"
-          respawn="true"/>
+    
 
     <!--    Save csv data-->
     <!-- <node type="csv_saver.py" name="csv_saver" pkg="local_sensing_intest" respawn="true" output="screen"/> -->
