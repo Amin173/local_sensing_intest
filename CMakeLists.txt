@@ -283,6 +283,10 @@ catkin_install_python(PROGRAMS scripts/range_data_broadcaster.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
+catkin_install_python(PROGRAMS scripts/simulated_robot_tcp.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 catkin_install_python(PROGRAMS scripts/tcp.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

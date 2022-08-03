@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 
+<!--Launches all the stuff that is not a robot-->>
+
 <launch>
 
 
