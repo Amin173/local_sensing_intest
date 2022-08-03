@@ -3,6 +3,16 @@
 <!--This launch file will run all the necessary nodes to run the slam algorithm from a simulated robot. The simulation data will come from a csv file-->
 
 <launch>
+
+    <arg name="num_of_tags" default="13"/>
+
+    <!--     AprilTag -->
+    <node name="get_apriltag_data" pkg="local_sensing_intest" type="simulated_apriltag_broadcaster.py" respawn="false"
+          args="$(arg num_of_tags)"/>
+
+    <!--     Transorms -->
+    <include file="$(find local_sensing_intest)/launch/transforms.launch"/>
+
     <!--Define number of bots used in the simulation-->
     <arg name="num_of_bots" default="12"/>
 
@@ -22,15 +32,10 @@
 
     <rosparam command="load" file="$(find local_sensing_intest)/config/config.yml" />
 
-    <!--     Transorms -->
-    <include file="$(find local_sensing_intest)/launch/transforms_replay.launch"/>
-
-    
-
 
     <!--Now we start other stuff needed for the slam algorithm to work-->>
     <!-- PointCloud -->
-    <node name="point_cloud2_broadcaster" pkg="local_sensing_intest" type="point_cloud2_broadcaster_replay.py"
+    <node name="point_cloud2_broadcaster" pkg="local_sensing_intest" type="point_cloud2_broadcaster.py"
           respawn="true"
           output="screen" args="$(arg num_of_bots)"/>
     <node name="pc_frame_transform" pkg="local_sensing_intest" type="pc_frame_transform.py"

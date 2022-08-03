@@ -14,9 +14,13 @@ from numpy import array, cos, sin, pi
 dev_id_str = sys.argv[1]
 dev_id = int(dev_id_str)
 
-ang_2_q = lambda alf: R.from_matrix(block_diag(array([[cos(alf), sin(alf)], [-sin(alf), cos(alf)]]), [[1.]])).as_quat()
+#ang_2_q = lambda alf: R.from_matrix(block_diag(array([[cos(alf), sin(alf)], [-sin(alf), cos(alf)]]), [[1.]])).as_quat()
+ang_2_q = lambda alf: R.from_euler(0, 0, -alf, degrees=False).as_quat()
+off = pi / 2
+if dev_id%2 == 0:
+    off = 0
 
-default_dict = {"acc": [0., 0., 0.], "rot": ang_2_q(2 * pi * dev_id / 12.), "dist": .8}
+default_dict = {"acc": [0., 0., -1.], "rot": ang_2_q(2 * pi * dev_id / 12. - off), "dist": 300}
 
 rospy.init_node('tcp_connection', anonymous=True)
 range_pub = rospy.Publisher("bot%s/dist/data" % dev_id_str, Range, queue_size=1)
@@ -74,7 +78,7 @@ while not rospy.is_shutdown():
 
     seq += 1
 
-    data_dict = {"acc": [0., 0., 0.], "rot": [1., 0., 0., 0.], "dist": .8}
+    data_dict = default_dict
 
     publish_imu(data_dict, seq)
     publish_range(data_dict, seq)

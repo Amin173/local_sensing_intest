@@ -27,7 +27,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: LaserScan
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -58,51 +58,27 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        bot00:
-          Value: true
         bot00_analyt:
-          Value: true
-        bot01:
           Value: true
         bot01_analyt:
           Value: true
-        bot02:
-          Value: true
         bot02_analyt:
-          Value: true
-        bot03:
           Value: true
         bot03_analyt:
           Value: true
-        bot04:
-          Value: true
         bot04_analyt:
-          Value: true
-        bot05:
           Value: true
         bot05_analyt:
           Value: true
-        bot06:
-          Value: true
         bot06_analyt:
-          Value: true
-        bot07:
           Value: true
         bot07_analyt:
           Value: true
-        bot08:
-          Value: true
         bot08_analyt:
-          Value: true
-        bot09:
           Value: true
         bot09_analyt:
           Value: true
-        bot10:
-          Value: true
         bot10_analyt:
-          Value: true
-        bot11:
           Value: true
         bot11_analyt:
           Value: true
@@ -122,51 +98,27 @@ Visualization Manager:
         world:
           map:
             odom:
-              bot00:
-                {}
               bot00_analyt:
-                {}
-              bot01:
                 {}
               bot01_analyt:
                 {}
-              bot02:
-                {}
               bot02_analyt:
-                {}
-              bot03:
                 {}
               bot03_analyt:
                 {}
-              bot04:
-                {}
               bot04_analyt:
-                {}
-              bot05:
                 {}
               bot05_analyt:
                 {}
-              bot06:
-                {}
               bot06_analyt:
-                {}
-              bot07:
                 {}
               bot07_analyt:
                 {}
-              bot08:
-                {}
               bot08_analyt:
-                {}
-              bot09:
                 {}
               bot09_analyt:
                 {}
-              bot10:
-                {}
               bot10_analyt:
-                {}
-              bot11:
                 {}
               bot11_analyt:
                 {}
@@ -194,7 +146,7 @@ Visualization Manager:
       Color: 164; 0; 0
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -209,7 +161,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -222,7 +174,7 @@ Visualization Manager:
       Color: 0; 0; 255
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -237,7 +189,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -294,7 +246,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 4.790562629699707
+      Distance: 4.922955513000488
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -310,9 +262,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.8497961759567261
+      Pitch: 1.0247961282730103
       Target Frame: <Fixed Frame>
-      Yaw: 4.405436992645264
+      Yaw: 4.690437316894531
     Saved:
       - Class: rviz/Orbit
         Distance: 1.237680435180664
@@ -431,4 +383,4 @@ Window Geometry:
     collapsed: false
   Width: 1853
   X: 67
-  Y: 27
+  Y: 31
