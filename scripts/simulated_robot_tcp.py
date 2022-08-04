@@ -15,7 +15,7 @@ dev_id_str = sys.argv[1]
 dev_id = int(dev_id_str)
 
 #ang_2_q = lambda alf: R.from_matrix(block_diag(array([[cos(alf), sin(alf)], [-sin(alf), cos(alf)]]), [[1.]])).as_quat()
-ang_2_q = lambda alf: R.from_euler(0, 0, -alf, degrees=False).as_quat()
+ang_2_q = lambda alf: R.from_euler('z', -alf).as_quat()
 off = pi / 2
 if dev_id%2 == 0:
     off = 0

@@ -226,7 +226,8 @@ class UtilFunctions:
     def save_data(self, t, k, d, x, z):
         data = np.array([t, k, d, x, z])
         df2 = pd.DataFrame([data], columns=list('tKdxz'))
-        self.df = self.df.append(df2)
+        #self.df = self.df.append(df2)
+        self.df = pd.concat([self.df, df2])
 
     def get_alpha(self, data_dict=None):
         """ Method to get the alpha angle of the whole swarm """

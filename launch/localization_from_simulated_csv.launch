@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+
+<!--This launch file will run all the necessary nodes to run the slam algorithm from a simulated robot. The simulation data will come from a csv file-->
+
+<launch>
+
+    <arg name="num_of_tags" default="13"/>
+
+    <!--     AprilTag -->
+    <node name="get_apriltag_data" pkg="local_sensing_intest" type="simulated_apriltag_broadcaster.py" respawn="false"
+          args="$(arg num_of_tags)"/>
+
+    <!--     Transorms -->
+    <include file="$(find local_sensing_intest)/launch/transforms.launch"/>
+
+    <!--Define number of bots used in the simulation-->
+    <arg name="num_of_bots" default="12"/>
+
+    <!--    Rviz-->
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find local_sensing_intest)/rviz/config_file.rviz"
+          respawn="true"/>
+
+    <!--     Set initial pose using AprilTags, I have to change this to a custom initial pose from CSV, or create an apriltag simulator from CSV -->
+    <node name="set_initial_pose" pkg="local_sensing_intest" type="initial_pose_from_apriltags.py" respawn="false"/>
+
+    <!-- Controller -->
+    <!--    add delay to motion_planner!-->
+    <node pkg="local_sensing_intest" name="motion_planner" type="motion_planner.py" args="$(arg num_of_bots)"
+          output="screen"/>
+    <!--<node pkg="local_sensing_intest" name="vacuum" type="motion_test.py" args="vac" respawn="true"/>-->
+    <param name="engulfed" type="bool" value="True" />
+
+    <rosparam command="load" file="$(find local_sensing_intest)/config/config.yml" />
+
+
+    <!--Now we start other stuff needed for the slam algorithm to work-->>
+    <!-- PointCloud -->
+    <node name="point_cloud2_broadcaster" pkg="local_sensing_intest" type="point_cloud2_broadcaster.py"
+          respawn="true"
+          output="screen" args="$(arg num_of_bots)"/>
+    <node name="pc_frame_transform" pkg="local_sensing_intest" type="pc_frame_transform.py"
+          respawn="true" output="screen"/>
+
+    <!-- PointCloud to LaserScan -->
+    <include file="$(find local_sensing_intest)/launch/point_cloud_to_laserscan.launch"/>
+
+
+    <!--    Here the virutal TCP.launch file should start-->
+    <node name="tcp1" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="00" output="screen"
+        respawn="true"/>
+    <node name="tcp2" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="01" output="screen"
+        respawn="true"/>
+    <node name="tcp3" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="02" output="screen"
+        respawn="true"/>
+    <node name="tcp4" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="03" output="screen"
+        respawn="true"/>
+    <node name="tcp5" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="04" output="screen"
+        respawn="true"/>
+    <node name="tcp6" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="05" output="screen"
+        respawn="true"/>
+    <node name="tcp7" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="06" output="screen"
+        respawn="true"/>
+    <node name="tcp8" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="07" output="screen"
+        respawn="true"/>
+    <node name="tcp9" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="08" output="screen"
+        respawn="true"/>
+    <node name="tcp10" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="09" output="screen"
+        respawn="true"/>
+    <node name="tcp11" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="10" output="screen"
+        respawn="true"/>
+    <node name="tcp12" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="11" output="screen"
+        respawn="true"/>
+
+
+    <!--    PointCloud visualization-->
+    <!--    <node pkg="local_sensing_intest" type="point_cloud_visualization.py" name="point_cloud_visualization"-->
+    <!--          output="screen"-->
+    <!--          respawn="true"/>-->
+    <node name="pc_feature_extractor" pkg="local_sensing_intest" type="pcl_feature_ext.py" respawn="true"
+          output="screen"/>
+
+    <!-- Gmapping -->
+    <include file="$(find local_sensing_intest)/launch/gmapping.launch"/>
+
+    <!-- Odometry -->
+    <node name="odometry" pkg="local_sensing_intest" type="odometry.py" respawn="true" output="screen"/>
+
+    <!--    IMU frame converter-->
+    <node name="imu_frame_conversion" pkg="local_sensing_intest" type="imu_frame_conversion.py" respawn="true" args="12"
+          output="screen"/>
+    
+
+</launch>
