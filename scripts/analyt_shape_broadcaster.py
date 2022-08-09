@@ -34,7 +34,7 @@ class AnalyticModel:
         self.imu_quaternions = np.zeros((self.num_of_bots, 4))
         self.imu_quaternion_offsets = np.zeros((self.num_of_bots, 4))
         self.heading_angles_rel = np.zeros(self.num_of_bots)
-        self.heading_angle_offsets = np.array([0, 90, 0, 90, 0, 90, 0, 90, 0, 90, 0, 90])
+        self.heading_angle_offsets = 90 * (np.arange(self.num_of_bots) % 2)
         self.x_rel = np.zeros(self.num_of_bots)
         self.y_rel = np.zeros(self.num_of_bots)
         self.pose_offset_pub = rospy.Publisher("bot00_pose_offset", Pose, queue_size=50)

@@ -676,8 +676,9 @@ class UtilFunctions:
                                                                                                   cond2[
                                                                                                       self.back_row] == 0)
                 result[id] = -1
-
-            theta = (self.heading + np.array([0, 90, 0, 90, 0, 90, 0, 90, 0, 90, 0, 90])) * np.pi / 180
+            
+            tmp = 90 * (np.arange(len(self.heading))%2)
+            theta = (self.heading + tmp) * np.pi / 180
             heading_dirs = np.vstack(([np.cos(theta)], [np.sin(theta)])).T
 
             for angle in np.arange(-90, 135, 45):
