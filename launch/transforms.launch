@@ -2,9 +2,11 @@
 
 <launch>
 
+    <arg name="num_of_bots" /> <!-- default="12" /> -->
+    <arg name="fixed_frame_origin_tag" /> <!--default="$(num_of_bots)" />-->
+
     <arg name="fixed_frame" default="odom" />
-    <arg name="fixed_frame_origin_tag" default="12" />
-    <arg name="num_of_bots" default="12" />
+    
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="map_broadcaster"
           args="0 0 0 0 0 0 world map"/>
@@ -21,7 +23,7 @@
     <node name="bot_tf2_broadcaster1" pkg="local_sensing_intest" type="dynamic_tf2_broadcaster.py"
           respawn="true"
           output="screen" args="$(arg fixed_frame) $(arg fixed_frame_origin_tag)">
-        <rosparam param="child_frames">[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]</rosparam>
+        <!--<rosparam param="child_frames">[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]</rosparam>-->
     </node>
 
 </launch>

@@ -23,8 +23,8 @@ def num_2_str(num):
         return '0' + str(num)
 
 # Define dummy data for case where csv is not used
-ang_2_q = lambda alf: R.from_euler('z', alf, degrees=False).as_quat()
-default_dict = lambda n: {"acc": [0., 0., -1.], "rot": ang_2_q((2 * pi * n / (num_tags - 1)) + pi / 2 * (1 - (n%2))), "dist": 300 + (random()*100 - 50)}
+ang_2_q = lambda alf: R.from_euler('z', -alf, degrees=False).as_quat()
+default_dict = lambda n: {"acc": [0., 0., -1.], "rot": ang_2_q((2 * pi * n / (num_tags - 1)) + pi / 2 * (n%2)), "dist": 300 + (random()*100 - 50)}
 
 # Initialize node
 rospy.init_node('tcp_connection', anonymous=True)

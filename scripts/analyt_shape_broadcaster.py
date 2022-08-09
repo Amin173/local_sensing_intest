@@ -103,17 +103,18 @@ class AnalyticModel:
         L = []
         Theta = []
         lmax = 20
-        X = X.reshape(12)
-        for n in range(12):
-            if n < 11:
+        X = X.reshape(self.num_of_bots)
+        
+        for n in range(self.num_of_bots):
+            if n < self.num_of_bots - 1:
                 l = lmax * np.abs(np.sin((X[1 + n] - X[n] + 180) * np.pi / 360))
             else:
-                l = lmax * np.abs(np.sin((X[0] - X[11] + 180) * np.pi / 360))
+                l = lmax * np.abs(np.sin((X[0] - X[self.num_of_bots - 1] + 180) * np.pi / 360))
             L = np.append(L, l)
-        for n in range(12):
+        for n in range(self.num_of_bots):
             offset0 = 0 * (n % 2 == 0) + 90 * (n % 2 > 0)
             offset1 = 0 * ((n + 1) % 2 == 0) + 90 * ((n + 1) % 2 > 0)
-            if n < 11:
+            if n < self.num_of_bots - 1:
                 Theta = np.append(Theta, np.arctan2(
                     np.sin((X[n + 0] + 90 + offset0) * np.pi / 180) + np.sin(
                         (X[n + 1] + 90 + offset1) * np.pi / 180),
@@ -121,13 +122,13 @@ class AnalyticModel:
                         (X[n + 1] + 90 + offset1) * np.pi / 180)))
             else:
                 Theta = np.append(Theta,
-                                  np.arctan2(np.sin((X[11] + 180) * np.pi / 180) + np.sin((X[0] + 90) * np.pi / 180),
-                                             np.cos((X[11] + 180) * np.pi / 180) + np.cos((X[0] + 90) * np.pi / 180)))
+                                  np.arctan2(np.sin((X[self.num_of_bots - 1] + 180) * np.pi / 180) + np.sin((X[0] + 90) * np.pi / 180),
+                                             np.cos((X[self.num_of_bots - 1] + 180) * np.pi / 180) + np.cos((X[0] + 90) * np.pi / 180)))
         # print(Theta.shape)
         B = np.vstack((-np.cos(Theta), -np.sin(Theta))).T
-        rel_positions = np.zeros([12, 2])
-        l = 12
-        for j in range(0, 11):
+        rel_positions = np.zeros([self.num_of_bots, 2])
+        l = self.num_of_bots
+        for j in range(0, self.num_of_bots-1):
             rel_positions[j + 1, :] = rel_positions[j, :] + l * B[j, :]
         if np.abs(np.linalg.norm(rel_positions[0, :] - rel_positions[-1, :]) - l) > 3:
             rel_positions[-1, :] = 0.5 * (rel_positions[-2, :] + rel_positions[0, :])
@@ -142,7 +143,7 @@ class AnalyticModel:
         for i in range(self.num_of_bots):
             # self.heading_angles_rel[i] = (data_dict[self.key(i)][2] - data_dict['00'][2])
             self.heading_angles_rel[i] = (data_dict[self.key(i)][2])
-        analyt_input = np.array(self.heading_angles_rel).reshape((1, 12))
+        analyt_input = np.array(self.heading_angles_rel).reshape((1, self.num_of_bots))
         rel_poses = self.analyt_model(analyt_input)
         self.x_rel = rel_poses[:, 0] / 100
         self.y_rel = - rel_poses[:, 1] / 100
@@ -186,6 +187,7 @@ if __name__ == '__main__':
     #                  broadcaster.base_link_odom)
     rate = rospy.Rate(10.0)
     while not rospy.is_shutdown():
+        #rospy.logerr("Analyt_model, Number of bots: %s", str(broadcaster.num_of_bots))
         try:
             (trans, rot) = listener.lookupTransform('/odom', '/bot00_analyt', rospy.Time(0))
             euler = tf.transformations.euler_from_quaternion(rot)

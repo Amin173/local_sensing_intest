@@ -7,11 +7,12 @@ from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3, PoseStamp
 import numpy as np
 from std_msgs.msg import String
 from numpy import array
+import sys
 
 class odomBroadcaster:
 
-    def __init__(self):
-        self.num_of_bots = 12
+    def __init__(self, num_nodes=12):
+        self.num_of_bots = num_nodes
         """Initial state"""
         x0 = float(rospy.get_param('initial_pose/x'))
         y0 = float(rospy.get_param('initial_pose/y'))
@@ -228,6 +229,11 @@ class odomBroadcaster:
 
 
 if __name__ == '__main__':
+    
     rospy.init_node('odometry_publisher')
-    odom_pub = odomBroadcaster()
+    try:
+        num_nodes = int(sys.argv[1])
+        odom_pub = odomBroadcaster(num_nodes)
+    except:
+        odom_pub = odomBroadcaster()
     odom_pub.update()

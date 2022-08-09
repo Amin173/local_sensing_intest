@@ -8,6 +8,7 @@ from geometry_msgs.msg import TransformStamped, PoseStamped
 import tf
 from sensor_msgs.msg import Imu
 from std_msgs.msg import String
+import numpy as np
 
 
 class Broadcaster:
@@ -124,7 +125,10 @@ if __name__ == '__main__':
     rospy.init_node('dynamic_tf2_broadcaster', anonymous=True)
     fixed_frame_id = sys.argv[1]
     fixed_frame_origin_tag = sys.argv[2]
+
+    rospy.set_param('child_frames', (np.arange(int(fixed_frame_origin_tag) - 1) + 1).tolist())
     child_frames = rospy.get_param('~child_frames')
+
     broadcasters = {}
     for i in child_frames:
         broadcasters[str(i)] = Broadcaster(bot_id(i), fixed_frame_id, fixed_frame_origin_tag)

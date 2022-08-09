@@ -50,7 +50,7 @@ def main(num_of_tags):
     data[num_of_tags] = tuple(p0)
 
     # Define dummy data for case where csv is not used
-    ang_2_q = lambda alf: R.from_euler('z', alf, degrees=False).as_matrix()
+    ang_2_q = lambda alf: R.from_euler('z', -alf, degrees=False).as_matrix()
     
     # Create all node data
     for i in range(int(num_of_tags)):
@@ -65,7 +65,7 @@ def main(num_of_tags):
         p = 30. * array([cos(alf), sin(alf), 0.]) + p0
 
         # Generate angle:
-        ang = _rotation_matrix_to_euler_angles(ang_2_q((2 * pi * i / (int(num_of_tags) - 1)) + pi / 2 * (1 - (i%2))) )
+        ang = _rotation_matrix_to_euler_angles(ang_2_q((2 * pi * i / (int(num_of_tags) - 1)) + pi / 2 * (i%2)) )
         p[-1] = ang
 
         data[idx] = tuple(p)
