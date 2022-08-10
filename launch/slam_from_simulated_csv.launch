@@ -4,14 +4,16 @@
 
 <launch>
 
-    <arg name="num_of_tags" default="23"/>
+    <arg name="num_of_tags" default="13"/>
     
     <!--Define number of bots used in the simulation-->
-    <arg name="num_of_bots" default="22"/>
+    <arg name="num_of_bots" default="12"/>
+
+    <arg name="csv_file" default="TestData2.csv" />
 
     <!--     AprilTag -->
     <node name="get_apriltag_data" pkg="local_sensing_intest" type="simulated_apriltag_broadcaster.py" respawn="false"
-          args="$(arg num_of_tags)"/>
+          args="$(arg num_of_tags) $(arg csv_file)"/>
 
     <!--     Transorms -->
     <include file="$(find local_sensing_intest)/launch/transforms_replay.launch">
@@ -51,7 +53,7 @@
 
 
     <!--    Here the virutal TCP.launch file should start-->
-    <node name="tpc_all" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="$(arg num_of_bots)" output="screen"
+    <node name="tpc_all" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="$(arg num_of_tags) $(arg num_of_bots) $(arg csv_file)" output="screen"
         respawn="true"/>
 
 

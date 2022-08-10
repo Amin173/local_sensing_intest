@@ -12,7 +12,7 @@ from sensor_msgs.msg import Range, Imu
 
 ####################################################
 num_of_bots = int(sys.argv[1])
-rob = UtilFunctions(vacuum=False, stop_dist=10., threshold_angle=65, num=num_of_bots, target_id='12')
+rob = UtilFunctions(vacuum=False, stop_dist=10., threshold_angle=65, num=num_of_bots, target_id=str(num_of_bots))
 
 
 def key(i):

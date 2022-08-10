@@ -125,6 +125,7 @@ class UtilFunctions:
             self.angle_mode = "abs_closest"
         else:
             self.angle_mode = "mean"
+            
         # Get the angles values of the legged robot and put them in a array for the optimization
         for (i, ids) in enumerate(self.bot_ids):
             if self.angle_mode == "relative":

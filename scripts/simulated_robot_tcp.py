@@ -8,13 +8,21 @@ from std_msgs.msg import String
 import netifaces as ni
 from scipy.spatial.transform import Rotation as R
 from scipy.linalg import block_diag
-from numpy import array, cos, sin, pi
+from numpy import array, cos, sin, pi, loadtxt
 from numpy.random import random
-
+import ast
+import numpy as np
 
 # Get initial arguments, this should include csv file location to run from simulated data
 # number of tags, number of robots + 1
 num_tags = int(sys.argv[1])
+num_bots = int(sys.argv[2])
+csv_filename = sys.argv[3]
+
+# Load data
+
+csv_data = loadtxt('/opt/ros/overlay_ws/src/local_sensing_intest/simulated_csv/' + csv_filename, delimiter=',')
+max_time = csv_data[-1, 0]
 
 def num_2_str(num):
     if num > 9:
@@ -25,6 +33,25 @@ def num_2_str(num):
 # Define dummy data for case where csv is not used
 ang_2_q = lambda alf: R.from_euler('z', -alf, degrees=False).as_quat()
 default_dict = lambda n: {"acc": [0., 0., -1.], "rot": ang_2_q((2 * pi * n / (num_tags - 1)) + pi / 2 * (n%2)), "dist": 300 + (random()*100 - 50)}
+
+# Returns the positions, angles and ranges at a given time for all bots
+def getTime_data(time, num_bots, data):
+    # get data timestep
+    file_dt = data[1, 0] - data[0, 0]
+
+    # calculate index for given time and timestep:
+    idx = min(0, int(np.round(time / file_dt, 0)))
+
+    tmp = data[idx, 1:].reshape((num_bots, 7))
+
+    positions = tmp[:, :2]
+    velocities = tmp[:, 2:4]
+    norms = tmp[:, 4:6]
+    angles = np.arctan2(norms[:, 1], norms[:, 0])
+    ranges = tmp[:, 6]
+
+    # return needed data only
+    return positions, angles, ranges
 
 # Initialize node
 rospy.init_node('tcp_connection', anonymous=True)
@@ -75,32 +102,46 @@ def publish_range(publisher, dev_id_str, range_measurement, seq):
     publisher.publish(dist_msg)
 
 
-
 # Code starts here:
+# time to which send csv data
+glob_time = -1
 
 def callback(msg):
     global motion_cmd
     data_dict = eval(msg.data)
     #motion_cmd = str(data_dict[dev_id_str][1]) + "_" + str(data_dict[dev_id_str][0])
 
+def callbackTime(msg):
+    global glob_time
+    tmp = ast.literal_eval(msg.data)
+    glob_time = tmp["time"]
 
 rospy.Subscriber("control_cmd", String, callback)
+
+# Callback to send range data
+rospy.Subscriber('state', String, callbackTime)
 
 # Define rate at which to run simulation
 seq = 0
 rate = rospy.Rate(20)
-while not rospy.is_shutdown():
+while not rospy.is_shutdown() and glob_time < max_time:
     # increment sequence time
     seq += 1
 
-    # for each tag generate data and publish
-    for i, (imu_p, range_p) in enumerate(zip(imu_pubs, range_pubs)):
-        # TODO: read from csv to generate data_dict for each tag
-        data_dict = default_dict(i)
-        dev_id_str = num_2_str(i)
+    if glob_time >= 0.:
 
-        # Publish data for tag
-        publish_imu(imu_p, dev_id_str, data_dict, seq)
-        publish_range(range_p, dev_id_str, data_dict, seq)
+        positions, angles, ranges = getTime_data(glob_time, num_bots, csv_data)
+
+        # for each tag generate data and publish
+        for i, (imu_p, range_p, imu_d, range_d) in enumerate(zip(imu_pubs, range_pubs, angles, ranges)):
+            # TODO: read from csv to generate data_dict for each tag
+            data_dict = {"acc": [0., 0., -1.], "rot": ang_2_q((imu_d + pi / 2 * (i%2))), "dist": range_d * 1000}
+
+            
+            dev_id_str = num_2_str(i)
+
+            # Publish data for tag
+            publish_imu(imu_p, dev_id_str, data_dict, seq)
+            publish_range(range_p, dev_id_str, data_dict, seq)
 
     rate.sleep()

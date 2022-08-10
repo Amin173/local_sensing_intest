@@ -9,7 +9,8 @@ tracking system from : https://github.com/duckietown/apriltags3-py
 import sys
 import rospy
 from std_msgs.msg import String
-from numpy import array, cos, sin, pi, sqrt, arctan2
+from numpy import array, cos, sin, pi, sqrt, arctan2, loadtxt
+import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 sys.path.append('./JameobaApriltags/')
@@ -35,26 +36,49 @@ def _rotation_matrix_to_euler_angles(Rot):
 
     return z * 180 / pi#array([x, y, z])
 
-def main(num_of_tags):
+def getTime_data(time, num_bots, data):
+    # get data timestep
+    file_dt = data[1, 0] - data[0, 0]
+
+    # calculate index for given time and timestep:
+    idx = min(0, int(np.round(time / file_dt, 0)))
+
+    tmp = data[idx, 1:].reshape((num_bots, 7))
+
+    positions = tmp[:, :2]
+    velocities = tmp[:, 2:4]
+    norms = tmp[:, 4:6]
+    angles = np.arctan2(norms[:, 1], norms[:, 0])
+    ranges = tmp[:, 6]
+
+    # return needed data only
+    return positions, angles, ranges
+
+
+def main(num_of_tags, csv_filename):
     # Say if you want to lot the data after the test
     plot_data = False
     animate_data = True
     date = datetime.datetime.now()
+
+    # Load csv file:
+    num_bots = int(num_of_tags) - 1
+    tmp_data = loadtxt('/opt/ros/overlay_ws/src/local_sensing_intest/simulated_csv/' + csv_filename, delimiter=',')
+    max_time = tmp_data[-1, 0]
+    
 
     # Create data dictionary and fake data for now
     data = {}
 
     # Generate offset point
     
-    p0 = array([300., 300., 0.])
-    data[num_of_tags] = tuple(p0)
+    p0 = array([-3.2454133530086167, 2.8524046300249237, -1.5700002525341776])
 
     # Define dummy data for case where csv is not used
     ang_2_q = lambda alf: R.from_euler('z', -alf, degrees=False).as_matrix()
     
     # Create all node data
     for i in range(int(num_of_tags)):
-
         # Generate tag
         idx = str(i)
         if len(idx) == 1:
@@ -70,6 +94,7 @@ def main(num_of_tags):
 
         data[idx] = tuple(p)
 
+    data['time'] = -1
 
     # Setup ROS
     pub = rospy.Publisher('state', String, queue_size=10)
@@ -78,14 +103,34 @@ def main(num_of_tags):
 
     rate = rospy.Rate(5) # in Hz
 
-    while not rospy.is_shutdown():
+    tmp = rospy.get_rostime()
+    t0 = tmp.secs + tmp.nsecs * 1e-9
+    while not rospy.is_shutdown():# and rospy.get_rostime().secs < max_time:
+        now = rospy.get_rostime()
+        now = now.secs + now.nsecs * 1e-9 - t0
+        positions, angles, ranges = getTime_data(now, num_bots, tmp_data)
+
+        data['time'] = now
+
+        # For each node update data
+        for i, k in enumerate(list(data.keys())[:-2]):
+            angle = (angles[i] + pi/2 * (i%2)) * 180 / pi
+            if angle > 180:
+                angle -= 360
+            elif angle < -180:
+                angle += 360
+            data[k] = (positions[i, 0] - p0[0], positions[i, 1] - p0[1], angle)
+
+        
+
+        # Publish result
         pub.publish(str(data))
         rate.sleep()
 
 
 if __name__ == '__main__':
     try:
-        main(sys.argv[1])
+        main(sys.argv[1], sys.argv[2])
     except rospy.ROSInterruptException:
         print(rospy.ROSInterruptException)
         pass
