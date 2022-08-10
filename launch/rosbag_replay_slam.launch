@@ -7,7 +7,10 @@
     <rosparam command="load" file="$(find local_sensing_intest)/config/config.yml" />
 
     <!--     Transorms -->
-    <include file="$(find local_sensing_intest)/launch/transforms_replay.launch"/>
+    <include file="$(find local_sensing_intest)/launch/transforms_replay.launch">
+            <arg name="num_of_bots" value="$(arg num_of_bots)" />
+            <arg name="fixed_frame_origin_tag" value="$(arg num_of_bots)" />
+    </include>
 
     <!-- Rosbag play -->
     <!--    <node pkg="rosbag" type="play" name="player" output="screen" args="&#45;&#45;clock $(env bag_file) -r 1"/>-->
