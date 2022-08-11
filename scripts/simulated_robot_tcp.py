@@ -40,7 +40,7 @@ def getTime_data(time, num_bots, data):
     file_dt = data[1, 0] - data[0, 0]
 
     # calculate index for given time and timestep:
-    idx = min(0, int(np.round(time / file_dt, 0)))
+    idx = int(np.round(time / file_dt, 0))
 
     tmp = data[idx, 1:].reshape((num_bots, 7))
 
@@ -119,29 +119,33 @@ def callbackTime(msg):
 rospy.Subscriber("control_cmd", String, callback)
 
 # Callback to send range data
-rospy.Subscriber('state', String, callbackTime)
+rospy.Subscriber("state", String, callbackTime)
 
 # Define rate at which to run simulation
 seq = 0
 rate = rospy.Rate(20)
-while not rospy.is_shutdown() and glob_time < max_time:
+now = -1.
+while not rospy.is_shutdown() and now < max_time:
     # increment sequence time
     seq += 1
 
     if glob_time >= 0.:
 
-        positions, angles, ranges = getTime_data(glob_time, num_bots, csv_data)
+        now = rospy.get_rostime()
+        now = now.secs + now.nsecs * 1e-9 - glob_time
+        
+        positions, angles, ranges = getTime_data(now, num_bots, csv_data)
+        #ranges = np.flip(ranges)
+        
 
         # for each tag generate data and publish
         for i, (imu_p, range_p, imu_d, range_d) in enumerate(zip(imu_pubs, range_pubs, angles, ranges)):
-            # TODO: read from csv to generate data_dict for each tag
+            
             data_dict = {"acc": [0., 0., -1.], "rot": ang_2_q((imu_d + pi / 2 * (i%2))), "dist": range_d * 1000}
-
             
             dev_id_str = num_2_str(i)
 
             # Publish data for tag
             publish_imu(imu_p, dev_id_str, data_dict, seq)
             publish_range(range_p, dev_id_str, data_dict, seq)
-
     rate.sleep()

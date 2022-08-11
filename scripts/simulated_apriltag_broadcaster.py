@@ -41,7 +41,7 @@ def getTime_data(time, num_bots, data):
     file_dt = data[1, 0] - data[0, 0]
 
     # calculate index for given time and timestep:
-    idx = min(0, int(np.round(time / file_dt, 0)))
+    idx = int(np.round(time / file_dt, 0))
 
     tmp = data[idx, 1:].reshape((num_bots, 7))
 
@@ -72,7 +72,7 @@ def main(num_of_tags, csv_filename):
 
     # Generate offset point
     
-    p0 = array([-3.2454133530086167, 2.8524046300249237, -1.5700002525341776])
+    p0 = array([-3.2454133530086167, 2.8524046300249237, 0.])
 
     # Define dummy data for case where csv is not used
     ang_2_q = lambda alf: R.from_euler('z', -alf, degrees=False).as_matrix()
@@ -87,7 +87,7 @@ def main(num_of_tags, csv_filename):
         # Generate position
         alf = 2 * pi * i / int(num_of_tags)
         p = 30. * array([cos(alf), sin(alf), 0.]) + p0
-
+        
         # Generate angle:
         ang = _rotation_matrix_to_euler_angles(ang_2_q((2 * pi * i / (int(num_of_tags) - 1)) + pi / 2 * (i%2)) )
         p[-1] = ang
@@ -109,12 +109,14 @@ def main(num_of_tags, csv_filename):
         now = rospy.get_rostime()
         now = now.secs + now.nsecs * 1e-9 - t0
         positions, angles, ranges = getTime_data(now, num_bots, tmp_data)
+        #angles = np.flip(angles)
+        angles = - angles
 
-        data['time'] = now
+        data['time'] = t0#now
 
         # For each node update data
         for i, k in enumerate(list(data.keys())[:-2]):
-            angle = (angles[i] + pi/2 * (i%2)) * 180 / pi
+            angle = (angles[i] - pi/2 * (i%2)) * 180 / pi
             if angle > 180:
                 angle -= 360
             elif angle < -180:
