@@ -123,8 +123,6 @@ def main(num_of_tags, csv_filename):
                 angle += 360
             data[k] = (positions[i, 0] - p0[0], positions[i, 1] - p0[1], angle)
 
-        
-
         # Publish result
         pub.publish(str(data))
         rate.sleep()

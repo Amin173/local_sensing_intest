@@ -86,9 +86,9 @@ class odomBroadcaster:
         ground_truth = PoseWithCovarianceStamped()
         ground_truth.header.frame_id = 'map'
         ground_truth.header.stamp = rospy.Time.now()
-        q = tf.transformations.quaternion_from_euler(0, 0, -(self.heading[0]-self.heading[12])*np.pi/180)
-        ground_truth.pose.pose.position.x = (self.qx[0]-self.qx[12])/100
-        ground_truth.pose.pose.position.y = -(self.qz[0]-self.qz[12])/100
+        q = tf.transformations.quaternion_from_euler(0, 0, -(self.heading[0]-self.heading[-1])*np.pi/180)
+        ground_truth.pose.pose.position.x = (self.qx[0]-self.qx[-1])/100
+        ground_truth.pose.pose.position.y = -(self.qz[0]-self.qz[-1])/100
         ground_truth.pose.pose.position.z = 0
         ground_truth.pose.pose.orientation.x = q[0]
         ground_truth.pose.pose.orientation.y = q[1]
@@ -143,7 +143,8 @@ class odomBroadcaster:
             self.current_time = rospy.Time.now()
 
             # compute odometry in a typical way given the velocities of the robot
-            theta = (self.heading + np.array([0, 90, 0, 90, 0, 90, 0, 90, 0, 90, 0, 90, 0])) * np.pi / 180
+            theta = (self.heading + (np.arange(self.num_of_bots + 1)%2) * 90) * np.pi / 180.
+            #theta = (self.heading + np.array([0, 90, 0, 90, 0, 90, 0, 90, 0, 90, 0, 90, 0])) * np.pi / 180
             # heading_dirs = np.vstack(([np.cos(theta)], [np.sin(theta)])).T
             dt = (self.current_time - self.last_time).to_sec()
 
@@ -167,7 +168,7 @@ class odomBroadcaster:
 
             self.x += delta_x
             self.y += delta_y
-            self.th = -(theta[0] - theta[12])
+            self.th = -(theta[0] - theta[-1])
 
             # self.x_vel_model += delta_x
             # self.y_vel_model += delta_y

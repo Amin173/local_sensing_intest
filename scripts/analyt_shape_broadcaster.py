@@ -12,7 +12,20 @@ import tf
 from sensor_msgs.msg import Range, Imu
 from std_msgs.msg import String
 import numpy as np
+import cvxopt
 
+def cvxopt_solve_qp(P, q, Aineq=None, bineq=None, Aeq=None, beq=None):
+    P = .5 * (P + P.T)  # make sure P is symmetric
+    args = [cvxopt.matrix(P), cvxopt.matrix(q)]
+    if Aineq is not None:
+        args.extend([cvxopt.matrix(Aineq), cvxopt.matrix(bineq)])
+        if Aeq is not None:
+            args.extend([cvxopt.matrix(Aeq), cvxopt.matrix(beq)])
+    cvxopt.solvers.options['show_progress'] = False
+    sol = cvxopt.solvers.qp(*args)
+    if 'optimal' not in sol['status']:
+        return None
+    return np.array(sol['x']).reshape((P.shape[1],))
 
 class AnalyticModel:
     def __init__(self, frame_id, num_of_bots, origin_tag_id):
@@ -99,40 +112,68 @@ class AnalyticModel:
                                                                                  [msg.orientation.x, msg.orientation.y,
                                                                                   msg.orientation.z, msg.orientation.w])
 
-    def analyt_model(self, X):
+    def analyt_model(self, X, method='rigid_joint', best_fit=False):
+        # Vector for distances between subunits
         L = []
-        Theta = []
-        lmax = 20
+
+        # Vector with direction angle between one bot and the next
+        theta = []
+
+        # Max distance between bots
+        lmax = 150/20#20
+        lmin = 30
+
+        # Bot normal direction angles
         X = X.reshape(self.num_of_bots)
         
-        for n in range(self.num_of_bots):
-            if n < self.num_of_bots - 1:
-                l = lmax * np.abs(np.sin((X[1 + n] - X[n] + 180) * np.pi / 360))
-            else:
-                l = lmax * np.abs(np.sin((X[0] - X[self.num_of_bots - 1] + 180) * np.pi / 360))
-            L = np.append(L, l)
-        for n in range(self.num_of_bots):
-            offset0 = 0 * (n % 2 == 0) + 90 * (n % 2 > 0)
-            offset1 = 0 * ((n + 1) % 2 == 0) + 90 * ((n + 1) % 2 > 0)
-            if n < self.num_of_bots - 1:
-                Theta = np.append(Theta, np.arctan2(
-                    np.sin((X[n + 0] + 90 + offset0) * np.pi / 180) + np.sin(
-                        (X[n + 1] + 90 + offset1) * np.pi / 180),
-                    np.cos((X[n + 0] + 90 + offset0) * np.pi / 180) + np.cos(
-                        (X[n + 1] + 90 + offset1) * np.pi / 180)))
-            else:
-                Theta = np.append(Theta,
-                                  np.arctan2(np.sin((X[self.num_of_bots - 1] + 180) * np.pi / 180) + np.sin((X[0] + 90) * np.pi / 180),
-                                             np.cos((X[self.num_of_bots - 1] + 180) * np.pi / 180) + np.cos((X[0] + 90) * np.pi / 180)))
-        # print(Theta.shape)
-        B = np.vstack((-np.cos(Theta), -np.sin(Theta))).T
-        rel_positions = np.zeros([self.num_of_bots, 2])
-        l = self.num_of_bots
-        for j in range(0, self.num_of_bots-1):
-            rel_positions[j + 1, :] = rel_positions[j, :] + l * B[j, :]
-        if np.abs(np.linalg.norm(rel_positions[0, :] - rel_positions[-1, :]) - l) > 3:
-            rel_positions[-1, :] = 0.5 * (rel_positions[-2, :] + rel_positions[0, :])
 
+        ### Precalculate variables that will later be nidded
+        # Calculate angles, offset 90 deg for odd numbered bots and constrain between - pi to pi
+        normals = (X + self.heading_angle_offsets) * np.pi / 180
+        normals += (normals > np.pi) * (- 2 * np.pi) + (normals < - np.pi) * (2 * np.pi)
+
+        # Calculate difference in angle, constrain between - pi to pi
+        diff = np.roll(normals, -1) - normals
+        diff += (diff > np.pi) * (- 2 * np.pi) + (diff < - np.pi) * (2 * np.pi)
+
+        # Calculate direction to next bot:
+        theta = np.exp(1j * np.roll(normals, -1)) + np.exp(1j * normals) / 2.
+        theta = np.angle(theta) - np.pi / 2
+        theta += (theta > np.pi) * (- 2 * np.pi) + (theta < - np.pi) * (2 * np.pi)
+
+        # Method to calculate distance between bots
+        if method == 'rigid_joint':      # rigid_joint
+            L = lmax * np.sqrt(2 + 2 * np.cos(diff))
+        elif method == 'linear':         # ransac regressor
+            L = (155.93 - 0.8547 * 180 / np.pi * np.abs(diff)) / 10.
+        else:
+            L = self.num_of_bots
+
+        # Distance vector from one bot to the next
+        B = np.vstack((np.cos(theta), np.sin(theta)))
+
+        if best_fit:
+            # In case we want to adjust to best fit using qp
+            P = np.eye(self.num_of_bots)
+            q = np.zeros((self.num_of_bots, 1))
+            Aineq = np.eye(self.num_of_bots)
+            bineq = np.ones((self.num_of_bots, 1)) * lmin - L.reshape((self.num_of_bots, 1))
+            Aeq = B
+            beq = - B @ L
+
+            solution = cvxopt_solve_qp(P, q, Aineq=Aineq, bineq=bineq, Aeq=Aeq, beq=beq)
+            L += solution
+            
+        
+        # Update vectors that take you from one bot to the next
+        B = (L * B).T
+
+        #tmp = np.sqrt(np.sum(B**2, axis=1))
+        #rospy.logerr("Distances : %s", str(tmp))
+
+        # calculate the positions of each bot
+        rel_positions = np.vstack((np.zeros((1, 2)), np.cumsum(B, axis=0)[:-1, :]))
+        
         return rel_positions
 
     def update_aprilt_state_values(self, data):
@@ -185,7 +226,7 @@ if __name__ == '__main__':
     # rospy.Subscriber("odometry/filtered_map",
     #                  Odometry,
     #                  broadcaster.base_link_odom)
-    rate = rospy.Rate(10.0)
+    rate = rospy.Rate(20.0)
     while not rospy.is_shutdown():
         #rospy.logerr("Analyt_model, Number of bots: %s", str(broadcaster.num_of_bots))
         try:

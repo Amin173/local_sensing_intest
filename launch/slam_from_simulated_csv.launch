@@ -4,21 +4,12 @@
 
 <launch>
 
-<<<<<<< HEAD
-    <arg name="num_of_tags" default="27"/>
+    <arg name="num_of_tags" default="51"/>
     
     <!--Define number of bots used in the simulation-->
-    <arg name="num_of_bots" default="26"/>
+    <arg name="num_of_bots" default="50"/>
 
-    <arg name="csv_file" default="Example_26_bots.csv" />
-=======
-    <arg name="num_of_tags" default="23"/>
-    
-    <!--Define number of bots used in the simulation-->
-    <arg name="num_of_bots" default="22"/>
-
-    <arg name="csv_file" default="TestData_22.csv" />
->>>>>>> dbb1353ace00ad7ed17a5506802f12ef44de8756
+    <arg name="csv_file" default="Example_50_bots.csv" />
 
     <!--     AprilTag -->
     <node name="get_apriltag_data" pkg="local_sensing_intest" type="simulated_apriltag_broadcaster.py" respawn="false"
@@ -77,7 +68,7 @@
     <include file="$(find local_sensing_intest)/launch/gmapping.launch"/>
 
     <!-- Odometry -->
-    <node name="odometry" pkg="local_sensing_intest" type="odometry.py" respawn="true" output="screen"/>
+    <node name="odometry" pkg="local_sensing_intest" type="odometry.py" args="$(arg num_of_bots)" respawn="true" output="screen"/>
 
     <!--    IMU frame converter-->
     <node name="imu_frame_conversion" pkg="local_sensing_intest" type="imu_frame_conversion.py" respawn="true" args="$(arg num_of_bots)"

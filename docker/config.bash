@@ -18,3 +18,4 @@ python3 -m pip install open3d --ignore-installed PyYAML
 python3 -m pip install scipy
 python3 -m pip install ruamel.yaml
 python3 -m pip install pathlib
+python3 -m pip install cvxopt
