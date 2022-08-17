@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+
+<launch>
+
+    <!--     Transorms (Not sure if needed now)-->
+    <!--<include file="$(find local_sensing_intest)/launch/transforms_replay.launch"/>-->
+
+    <!-- PointCloud -->
+    <node name="point_cloud2_broadcaster" pkg="local_sensing_intest" type="point_cloud2_broadcaster_replay.py"
+          respawn="true"
+          output="screen" args="$(arg num_of_bots)"/>
+    <node name="pc_frame_transform" pkg="local_sensing_intest" type="pc_frame_transform.py"
+          respawn="true" output="screen"/>
+
+    <!-- PointCloud to LaserScan -->
+    <include file="$(find local_sensing_intest)/launch/point_cloud_to_laserscan.launch"/>
+
+    <!--    PointCloud visualization-->
+    <!--    <node pkg="local_sensing_intest" type="point_cloud_visualization.py" name="point_cloud_visualization"-->
+    <!--          output="screen"-->
+    <!--          respawn="true"/>-->
+    <node name="pc_feature_extractor" pkg="local_sensing_intest" type="pcl_feature_ext.py" respawn="true"
+          output="screen"/>
+
+    <!-- Gmapping -->
+    <include file="$(find local_sensing_intest)/launch/gmapping.launch"/>
+
+    <!-- Odometry -->
+    <node name="odometry" pkg="local_sensing_intest" type="odometry.py" respawn="true" output="screen"/>
+
+    <!--    IMU frame converter-->
+    <node name="imu_frame_conversion" pkg="local_sensing_intest" type="imu_frame_conversion.py" respawn="true" args="12"
+          output="screen"/>
+
+    
+
+    <!--    Save csv data-->
+    <!-- <node type="csv_saver.py" name="csv_saver" pkg="local_sensing_intest" respawn="true" output="screen"/> -->
+
+    <!--    Record data-->
+    <!--    <node pkg="rosbag" type="record"-->
+    <!--          args="-o /home/amin/catkin_ws/src/local_sensing_intest/bags/ bot00/imu/data bot00/dist/data bot01/imu/data-->
+    <!--                  bot01/dist/data bot02/imu/data bot02/dist/data bot03/imu/data bot03/dist/data bot04/imu/data bot04/dist/data-->
+    <!--                  bot05/imu/data bot05/dist/data bot06/imu/data bot06/dist/data bot07/imu/data bot07/dist/data bot08/imu/data-->
+    <!--                  bot08/dist/data bot09/imu/data bot09/dist/data bot10/imu/data bot10/dist/data bot11/imu/data bot11/dist/data-->
+    <!--                  state map tf cloud2 control_cmd locomotion_stats"-->
+    <!--          name="record"/>-->
+
+</launch>

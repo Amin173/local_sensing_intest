@@ -21,7 +21,7 @@ FROM updated AS cacher
 # RUN touch /root/.ssh/known_hosts
 # RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 
-ARG CACHBUST="2"
+ARG CACHBUST="3"
 
 # clone workspace source
 ARG OVERLAY_WS
@@ -48,6 +48,8 @@ FROM updated AS builder_temp
 # install catkin tools
 RUN apt update \
     && apt install ros-$ROS_DISTRO-catkin python3-catkin-tools python3-osrf-pycommon python3-pip -y \
+    && apt install nano -y \
+    && apt install git -y \
     && apt upgrade python3-pip -y \
     && python3 -m pip install -U pip \
     && python3 -m pip install --upgrade setuptools pip \
