@@ -18,14 +18,18 @@ import numpy as np
 import pandas as pd
 import os
 import datetime
-
+import tf_conversions
+import tf
 
 ####################################################
 
 class UtilFunctions:
 
     def __init__(self, threshold_angle=60., vacuum=False, stop_dist=20., num=12, target_id='12'):
+        # Control command publisher for the subunit satate machin. Values are: {-1, 0, 1}
         self.cmd_pub = rospy.Publisher("control_cmd", String, queue_size=10)
+        # Locomotion state publisher. The value is a dictionary in string format: 
+        #   {desired direction: 2x1 vector, locomotion mode: jammed/unjammed}
         self.locomotion_stat_pub = rospy.Publisher("locomotion_stats", String, queue_size=10)
         parent_dir = '/home/amin/catkin_ws/src/local_sensing_intest/videos/'
         # all_subdirs = self.all_subdirs_of(parent_dir)
@@ -34,30 +38,32 @@ class UtilFunctions:
         num = int(num)
         self.num = num  # Set the number of robots in your swarm
         self.bot_ids = range(num)  # The ids of the legged robots
-        self.vac_state = False
-        self.t = zeros(num)
-        self.qx = np.zeros(num)
-        self.qz = np.zeros(num)
-        self.heading = np.zeros(num)
-        self.bounds = Bounds(list(ones(num) * 0.1), list(ones(num)))
-        self.linear_constraint = LinearConstraint(identity(num), zeros(num), ones(num))
-        self.x0 = zeros(num)
-        self.last = time()
-        self.opt = "simplex"
-        self.angle_mode = "mean"
-        self.stopped_robot = 0
-        self.at_least_one_stopped = False
-        self.access_token = {"Amin": "8269d62ca4178e500166245f1835a2e96f4a0de4"}
+        self.vac_state = False  # Jammed state of the robot: True/False
+        # Subunut relative heading angles [rad]. The relative angles are computed differntly in different locomotion modes.
+        self.t = zeros(num) 
+        self.qx = np.zeros(num) # Apriltag x positions [m]
+        self.qz = np.zeros(num) # Apriltag z positions [m] (the robot is assumed to move in the x-z plan)
+        self.heading = np.zeros(num) # Apriltag heading angles [deg]
+        # self.bounds = Bounds(list(ones(num) * 0.1), list(ones(num))) 
+        # self.linear_constraint = LinearConstraint(identity(num), zeros(num), ones(num))
+        # self.x0 = zeros(num) 
+        self.last = time() # Initial time refernce [s]
+        self.opt = "simplex" # Motion optimization algorithm
+        self.angle_mode = "mean" # The method for obtaining subunit relative heading anlges, i.e. self.t
+        self.stopped_robot = 0 # The bumber of subunits who have reached the target
+        self.at_least_one_stopped = False # The condition of at least one subunit reaching the target
+        self.access_token = {"Amin": "8269d62ca4178e500166245f1835a2e96f4a0de4"} # Token for using the Particle cloud API
 
         # Set the override values
-        is_override = zeros(num, dtype=bool)
-        override_state = zeros(num)
-        self.batt_level = ones(self.num) * -1
-        self.t_a = threshold_angle
-        self.vacuum = vacuum
-        self.stop_dist_default = stop_dist
+        # is_override = zeros(num, dtype=bool)
+        # override_state = zeros(num)
+        # self.batt_level = ones(self.num) * -1
+        self.t_a = threshold_angle # A refernce for determining puller/lifter subunits based on their heading angles (Note that this 
+        # is a more simplified version of using the optimization method.)
+        # self.vacuum = vacuum 
+        self.stop_dist_default = stop_dist # The subunit distance threshold from the target to stop
         self.stop_dist = ones(self.num) * stop_dist
-        self.xo = 1e3
+        self.xo = 1e3 # Initial value for 
         self.yo = 1e3
         self.tar_x = 0
         self.tar_z = 0
@@ -98,6 +104,10 @@ class UtilFunctions:
         self.rot_step = 0
         self.obstacle_avoidance_thrld = 0.15
         self.jammed_aligning = False
+        self.heading_angles_rel = np.zeros(self.num_of_bots)
+        self.heading_angle_offsets = np.array([0, 90, 0, 90, 0, 90, 0, 90, 0, 90, 0, 90])
+        self.rel_rotation_set = [False] * self.num_of_bots
+
 
     def all_subdirs_of(self, b='.'):
         result = []
@@ -108,23 +118,26 @@ class UtilFunctions:
         return result
 
     def state_callback(self, data):
+        ###########################################################################################
+        #### This block is mostly for old experiments and not used for the local sensing paper ####
+        ###########################################################################################
         """ Method to send the desired signals to the photons """
         data_dict = eval(data.data)
         self.tar_x = data_dict[self.target_id][0]
         self.tar_z = data_dict[self.target_id][1]
-        alpha = self.get_alpha(data_dict)
-        angle = self.get_angle(data_dict)
-        dist = self.get_dist(data_dict)
-        closest, leg_closest = self.get_min(dist=dist)
+        alpha = self.get_alpha(data_dict) # Rotation of the vector connecting the center of the robot to the target in the world frame (this is for older target tracking experiments)
+        angle = self.get_angle(data_dict) # Rotation of the vector connecting each bot to the target in the world frame
+        dist = self.get_dist(data_dict) # Distance of each bot to the target
+        closest, leg_closest = self.get_min(dist=dist) # Get the id of the closest bot to the target
         theta = zeros(self.num)
-        self.stopped_robot = sum(1 * (self.stop_dist == self.stop_dist_default + 5))
+        self.stopped_robot = sum(1 * (self.stop_dist == self.stop_dist_default + 5)) # Get the number of bots who have reached the target
         self.at_least_one_stopped = self.stopped_robot >= 1  # At least one stopped
-
+        self.base_link_orientation = -(data_dict['00'][2] - data_dict[data_dict['12']][2]) * 3.14 / 180 #Baselink apriltag orientation (for obtaining initial offset of baselink IMU)
         if self.at_least_one_stopped:  # If one robot is stopped
-            # self.angle_mode = "abs_closest" #use if self.opt = engulfing method is used
-            self.angle_mode = "abs_closest"
+            # The angle mode determines how theta[] is computed, which is later used for the optimization based control method.
+            self.angle_mode = "abs_closest" # A method for engulfing the target when the robot has reached it
         else:
-            self.angle_mode = "mean"
+            self.angle_mode = "mean" # The main method which is used for general target tracking. 
         # Get the angles values of the legged robot and put them in a array for the optimization
         for (i, ids) in enumerate(self.bot_ids):
             if self.angle_mode == "relative":
@@ -136,66 +149,63 @@ class UtilFunctions:
             elif self.angle_mode == "abs_closest":
                 theta[ids] = data_dict[self.key(self.get_stopped_closest(robot_id=ids, data_dict=data_dict))][2] - \
                              data_dict[self.key(ids)][2]
-            self.t[i] = pi * theta[ids] / 180.
-            self.qx[i] = data_dict[self.key(ids)][0]
-            self.qz[i] = data_dict[self.key(ids)][1]
-            self.heading[i] = data_dict[self.key(ids)][2]
+            self.t[i] = pi * theta[ids] / 180. # deg to rad
+            self.qx[i] = data_dict[self.key(ids)][0] # x position of the april tags
+            self.qz[i] = data_dict[self.key(ids)][1] # z position of the april tags (the robot moves in x-z plane)
         self.cosTheta = np.cos(self.t)
+                # A criteria of the robot alignment with respect to the desired direction of motion
         self.force = abs(
             self.cosTheta[(np.cos(self.t_a * np.pi / 180) <= self.cosTheta) * (self.cosTheta <= 1)]).sum() + \
                      abs(self.cosTheta[
                              (-1 <= self.cosTheta) * (self.cosTheta <= -np.cos(self.t_a * np.pi / 180))]).sum()
-        self.jamming_included = False
+        ###########################################################################################
+        ###########################################################################################
+        ###########################################################################################
+
+        self.jamming_included = False # Jamming was not included
         if self.jamming_included and not self.vac_state:
-            for i in range(5):
+            for i in range(5): # Wait for 5s untill jamming is complete
                 self.test("vac")
                 rospy.sleep(1)
-            self.vac_state = True
+            self.vac_state = True # Set vacuum state as true, not to run this operation in next loop iterations.
         ###################################################
-        if (time() - self.last) < 5:
-            if not rosparam.get_param("engulfed"):
-                self.opt = "c-shape"
-            else:
-                if not self.vac_state:
-                    for i in range(2):
-                        self.test("stop")
-                        rospy.sleep(1)
-                    for i in range(5):
-                        self.test("vac")
-                        rospy.sleep(1)
-                    self.vac_state = True
-                self.opt = "move_in_jammed"
-            # self.opt = "c-shape"
+        if (time() - self.last) < 5: # Move for five seconds
+            self.opt = "move"
             print("moving - desired direction:", self.des_dir, "average dist:",
-                  np.mean(self.stacked_normal_distances["0"]),
-                  "right:", np.mean(self.stacked_normal_distances["90"] + self.stacked_normal_distances["45"]),
-                  "left:", np.mean(self.stacked_normal_distances["-90"] + self.stacked_normal_distances["-45"]),
-                  "turn dir:", self.turn)
-        # elif 15 < (time() - self.last) < 20:
+                    np.mean(self.stacked_normal_distances["0"]),
+                    "right:", np.mean(self.stacked_normal_distances["90"] + self.stacked_normal_distances["45"]),
+                    "left:", np.mean(self.stacked_normal_distances["-90"] + self.stacked_normal_distances["-45"]),
+                    "turn dir:", self.turn)
+        # elif 15 < (time() - self.last) < 20: 
         #     self.opt = "scan"
         #     print("scanning - average dist:", np.mean(self.stacked_normal_distances["0"]))
-        else:
+        else:  # Check if the desired direction of motion should be updated
             self.last = time()
-            if len(self.stacked_normal_distances["0"]) > 0:
+            if len(self.stacked_normal_distances["0"]) > 0: # Make sure that the robot actually has distance measurements in the desired direction of motion
+                # Check if the robot mean distance in the desired direction
+                        # of motion is lower that the "direction_change_thrld" and the robot has become stagnent by reaching an obstacle
                 if np.mean(self.stacked_normal_distances["0"]) < self.direction_change_thrld and abs(
-                        self.prev_mean - np.mean(self.stacked_normal_distances["0"])) < 0.1:
-                    right_distance = np.mean(self.stacked_normal_distances["90"] + self.stacked_normal_distances["45"])
+                        self.prev_mean - np.mean(self.stacked_normal_distances["0"])) < 0.1: 
+                    # Mean distance measurent in the right side of the robot (i.e., how much space does robot have it turns right)
+                    right_distance = np.mean(self.stacked_normal_distances["90"] + self.stacked_normal_distances["45"]) 
+                    # Mean distance measurent in the left side of the robot (i.e., how much space does robot have it turns left)
                     left_distance = np.mean(self.stacked_normal_distances["-90"] + self.stacked_normal_distances["-45"])
-                    if self.turn == 1:
+                    if self.turn == 1: # Rotation direction of the robot CW/CCW (-1/1)
                         if right_distance < 0.3 and right_distance < left_distance:
-                            self.turn = -1
+                            self.turn = -1 # Rotate CW if the robot is turning left
                     else:
                         if left_distance < 0.3 and left_distance < right_distance:
-                            self.turn = 1
+                            self.turn = 1 # Rotate CCW if the robot is turning right
                     self.des_dir = np.dot(
                         np.array([[np.cos(self.turn * self.rot_step), -np.sin(self.turn * self.rot_step)],
                                   [np.sin(self.turn * self.rot_step), np.cos(self.turn * self.rot_step)]]),
-                        np.array(self.des_dir))
-                self.prev_mean = np.mean(self.stacked_normal_distances["0"])
-                self.stacked_normal_distances = {"-90": [], "-45": [], "0": [], "45": [], "90": []}
+                        np.array(self.des_dir)) # Update desired direction of motion by rotating it rot_step [rad] (the robot turn process happens
+                        # in small step )
+                self.prev_mean = np.mean(self.stacked_normal_distances["0"]) # update previous mean distance
+                self.stacked_normal_distances = {"-90": [], "-45": [], "0": [], "45": [], "90": []} # Cleare previous distance measurements
 
         result, speeds = self.get_opt_result(theta=theta, angle=angle, dist=dist, alpha=alpha, leg_closest=leg_closest,
-                                             data_dict=data_dict)
+                                             data_dict=data_dict) # Get control commands 
         ###################################################
         # print('heading angles:', self.heading)
         # print('x positions:', self.qx)
@@ -205,6 +215,7 @@ class UtilFunctions:
         ###################################################
         self.save_data(time() - self.t0, self.force / self.num, np.mean(dist), np.mean(self.qx), np.mean(self.qz))
 
+        #Convert control commands to usable values for the bots
         for (i, ids) in enumerate(self.bot_ids):
             if result[i] == 1:
                 self.state[self.key(ids)] = (1, speeds[i])  # Move forward
@@ -213,8 +224,7 @@ class UtilFunctions:
             elif result[i] == 0:
                 self.state[self.key(ids)] = (np.random.randint(3, 9), 0)  # Vibrate
 
-        # Send the values
-        self.cmd_pub.publish(str(self.state))
+        self.cmd_pub.publish(str(self.state)) # Publish motion commands
         locomotion_stats = {"mode": self.opt, "dir": self.des_dir}
         self.locomotion_stat_pub.publish(str(locomotion_stats))
 
@@ -697,6 +707,26 @@ class UtilFunctions:
         bot_id = msg.header.frame_id
         bot_number = int(bot_id[3:])
         self.range_data[bot_number] = msg.range
+    
+    def update_imu_quaternions(self, msg):
+        bot_id = msg.header.frame_id
+        bot_number = int(bot_id[3:])
+        if (not self.rel_rotation_set[bot_number]) and self.cam_trnsfrm_recieved:
+            q = tf_conversions.transformations.quaternion_from_euler(0, 0, -self.heading_angles_rel[
+                bot_number] * np.pi / 180 + self.base_link_orientation)
+            q1_inv = [msg.orientation.x, msg.orientation.y, msg.orientation.z, - msg.orientation.w]
+            q2 = [q[0], q[1], q[2], q[3]]
+            self.imu_quaternion_offsets[bot_number, :] = tf.transformations.quaternion_multiply(q2, q1_inv)
+            self.rel_rotation_set[bot_number] = True
+        self.imu_quaternions[bot_id, :] = tf.transformations.quaternion_multiply(self.qr,
+                                                                                 [msg.orientation.x, msg.orientation.y,
+                                                                                  msg.orientation.z, msg.orientation.w])
+        e = tf_conversions.transformations.euler_from_quaternion_from(self.imu_quaternions[bot_id, 0],
+                                                                      self.imu_quaternions[bot_id, 1],
+                                                                      self.imu_quaternions[bot_id, 2],
+                                                                      self.imu_quaternions[bot_id, 3])
+
+        self.heading[bot_id] = e[2]
 
     def test(self, test="vac"):
         """ Method to test different part of the vacuum robot """
