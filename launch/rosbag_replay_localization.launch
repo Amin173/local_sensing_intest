@@ -15,7 +15,11 @@
     <param name="initial_pose/a" type="double" value="0"/>
 
     <!--     Transorms -->
-    <include file="$(find local_sensing_intest)/launch/transforms_replay.launch"/>
+    <include file="$(find local_sensing_intest)/launch/transforms_replay.launch">
+        <arg name="num_of_bots" value="$(arg num_of_bots)" />
+        <arg name="fixed_frame_origin_tag" value="$(arg num_of_bots)" />
+        <arg name="odom_est_type" value="rigid_joint" />
+    </include>
 
     <!--     Set initial pose using AprilTags -->
     <!--    <node name="set_initial_pose" pkg="local_sensing_intest" type="initial_pose_from_apriltags.py" respawn="false"/>-->

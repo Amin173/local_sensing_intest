@@ -12,23 +12,9 @@ import tf
 from sensor_msgs.msg import Range, Imu
 from std_msgs.msg import String
 import numpy as np
-import cvxopt
-
-def cvxopt_solve_qp(P, q, Aineq=None, bineq=None, Aeq=None, beq=None):
-    P = .5 * (P + P.T)  # make sure P is symmetric
-    args = [cvxopt.matrix(P), cvxopt.matrix(q)]
-    if Aineq is not None:
-        args.extend([cvxopt.matrix(Aineq), cvxopt.matrix(bineq)])
-        if Aeq is not None:
-            args.extend([cvxopt.matrix(Aeq), cvxopt.matrix(beq)])
-    cvxopt.solvers.options['show_progress'] = False
-    sol = cvxopt.solvers.qp(*args)
-    if 'optimal' not in sol['status']:
-        return None
-    return np.array(sol['x']).reshape((P.shape[1],))
 
 class AnalyticModel:
-    def __init__(self, frame_id, num_of_bots, origin_tag_id):
+    def __init__(self, frame_id, num_of_bots, origin_tag_id, estimator_model='linear'):
         self.num_of_bots = int(num_of_bots)
         self.listener = tf.TransformListener()
         self.origin_tag = origin_tag_id
@@ -51,6 +37,12 @@ class AnalyticModel:
         self.x_rel = np.zeros(self.num_of_bots)
         self.y_rel = np.zeros(self.num_of_bots)
         self.pose_offset_pub = rospy.Publisher("bot00_pose_offset", Pose, queue_size=50)
+        self.data = {}
+
+        if type(estimator_model) == None:
+            self.estimator_model = 'linear'
+        else:
+            self.estimator_model = estimator_model
 
     def transform_broadcaster(self, bot_id):
         self.t.child_frame_id = "bot" + bot_id + "_analyt"
@@ -70,6 +62,26 @@ class AnalyticModel:
         # self.t.transform.rotation.z = self.imu_quaternions[bot_id, 2]
         # self.t.transform.rotation.w = self.imu_quaternions[bot_id, 3]
         self.br.sendTransform(self.t)
+
+        self.t.child_frame_id = "bot" + bot_id
+        bot_number = int(bot_id)
+        #self.t.header.stamp = rospy.Time.now()
+        
+        self.t.transform.translation.x = self.data[bot_id][0] - self.data['00'][0] + self.base_link_pose_x
+        self.t.transform.translation.y = self.data[bot_id][1] - self.data['00'][1] + self.base_link_pose_y
+        q = tf_conversions.transformations.quaternion_from_euler(0, 0, -self.data[bot_id][2] * np.pi / 180 - np.pi / 2 * (bot_number%2))
+        self.t.transform.rotation.x = q[0]
+        self.t.transform.rotation.y = q[1]
+        self.t.transform.rotation.z = q[2]
+        self.t.transform.rotation.w = q[3]
+        # self.t.transform.rotation.x = self.imu_quaternions[bot_id, 0]
+        # self.t.transform.rotation.y = self.imu_quaternions[bot_id, 1]
+        # self.t.transform.rotation.z = self.imu_quaternions[bot_id, 2]
+        # self.t.transform.rotation.w = self.imu_quaternions[bot_id, 3]
+        self.br.sendTransform(self.t)
+
+
+
 
     def base_link_pose(self, msg):
         data_dict = eval(msg.data)
@@ -112,7 +124,7 @@ class AnalyticModel:
                                                                                  [msg.orientation.x, msg.orientation.y,
                                                                                   msg.orientation.z, msg.orientation.w])
 
-    def analyt_model(self, X, method='rigid_joint', best_fit=False):
+    def analyt_model(self, X, best_fit=True):
         # Vector for distances between subunits
         L = []
 
@@ -121,7 +133,6 @@ class AnalyticModel:
 
         # Max distance between bots
         lmax = 150/20#20
-        lmin = 30
 
         # Bot normal direction angles
         X = X.reshape(self.num_of_bots)
@@ -137,14 +148,15 @@ class AnalyticModel:
         diff += (diff > np.pi) * (- 2 * np.pi) + (diff < - np.pi) * (2 * np.pi)
 
         # Calculate direction to next bot:
-        theta = np.exp(1j * np.roll(normals, -1)) + np.exp(1j * normals) / 2.
+        theta = np.exp(1j * np.roll(normals, -1)) + np.exp(1j * normals)
         theta = np.angle(theta) - np.pi / 2
         theta += (theta > np.pi) * (- 2 * np.pi) + (theta < - np.pi) * (2 * np.pi)
 
         # Method to calculate distance between bots
-        if method == 'rigid_joint':      # rigid_joint
-            L = lmax * np.sqrt(2 + 2 * np.cos(diff))
-        elif method == 'linear':         # ransac regressor
+        if self.estimator_model == 'rigid_joint':      # rigid_joint
+            #L = lmax * np.sqrt(2 + 2 * np.cos(diff + 2 * np.pi / self.num_of_bots))
+            L = 2 * lmax * np.cos(.5 * (diff + 2 * np.pi / self.num_of_bots))
+        elif self.estimator_model == 'linear':         # ransac regressor
             L = (155.93 - 0.8547 * 180 / np.pi * np.abs(diff)) / 10.
         else:
             L = self.num_of_bots
@@ -152,27 +164,36 @@ class AnalyticModel:
         # Distance vector from one bot to the next
         B = np.vstack((np.cos(theta), np.sin(theta)))
 
+        # Apply best fit to the estimator model
         if best_fit:
-            # In case we want to adjust to best fit using qp
-            P = np.eye(self.num_of_bots)
-            q = np.zeros((self.num_of_bots, 1))
-            Aineq = np.eye(self.num_of_bots)
-            bineq = np.ones((self.num_of_bots, 1)) * lmin - L.reshape((self.num_of_bots, 1))
-            Aeq = B
-            beq = - B @ L
+            C = np.cos(theta).reshape((-1, self.num_of_bots))
+            S = np.sin(theta).reshape((-1, self.num_of_bots))
 
-            solution = cvxopt_solve_qp(P, q, Aineq=Aineq, bineq=bineq, Aeq=Aeq, beq=beq)
-            L += solution
+            # Calculate the inverse of the covariances
+            COVi = np.eye(self.num_of_bots)
+
+            # Values to be used in operation
+            CCT = (C @ COVi @ C.T)[0, 0]
+            SST = (S @ COVi @ S.T)[0, 0]
+            SCT = (S @ COVi @ C.T)[0, 0]
+            CST = (C @ COVi @ S.T)[0, 0]
+
+            P = (SCT / CCT * C - S) / (SCT * CST / CCT - SST)
+            Q = (C - CST * P) / CCT
+
+            # Apply adjustment
+            x = - COVi @ (C.T @ Q @ L + S.T @ P @ L)
+            L += x
+            rospy.logerr('Test: %s', str(x))
             
         
         # Update vectors that take you from one bot to the next
         B = (L * B).T
 
-        #tmp = np.sqrt(np.sum(B**2, axis=1))
-        #rospy.logerr("Distances : %s", str(tmp))
-
         # calculate the positions of each bot
         rel_positions = np.vstack((np.zeros((1, 2)), np.cumsum(B, axis=0)[:-1, :]))
+
+        
         
         return rel_positions
 
@@ -181,6 +202,7 @@ class AnalyticModel:
         # self.base_link_pose_x = (data_dict['00'][0] - data_dict[self.origin_tag][0]) / 100
         # self.base_link_pose_y = -(data_dict['00'][1] - data_dict[self.origin_tag][1]) / 100
         # self.base_link_orientation = -(data_dict['00'][2] - data_dict[self.origin_tag][2]) * 3.14 / 180
+        self.data = data_dict
         for i in range(self.num_of_bots):
             # self.heading_angles_rel[i] = (data_dict[self.key(i)][2] - data_dict['00'][2])
             self.heading_angles_rel[i] = (data_dict[self.key(i)][2])
@@ -218,8 +240,9 @@ if __name__ == '__main__':
     num_of_bots = sys.argv[1]
     frame_id = sys.argv[2]
     origin_tag = sys.argv[3]
+    estimator_model = sys.argv[4]
     # child_frames = rospy.get_param('~child_frames')
-    broadcaster = AnalyticModel(frame_id, num_of_bots, origin_tag)
+    broadcaster = AnalyticModel(frame_id, num_of_bots, origin_tag, estimator_model)
     # for i in child_frames:
     #     rospy.Subscriber('%s/imu/data' % bot_id(i), Imu, broadcaster.update_imu_quaternions)
     rospy.Subscriber("state", String, broadcaster.update_aprilt_state_values)

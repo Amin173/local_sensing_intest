@@ -4,12 +4,12 @@
 
 <launch>
 
-    <arg name="num_of_tags" default="51"/>
+    <arg name="num_of_tags" default="13"/>
     
     <!--Define number of bots used in the simulation-->
-    <arg name="num_of_bots" default="50"/>
+    <arg name="num_of_bots" default="12"/>
 
-    <arg name="csv_file" default="Example_50_bots.csv" />
+    <arg name="csv_file" default="Example_12_bots.csv" />
 
     <!--     AprilTag -->
     <node name="get_apriltag_data" pkg="local_sensing_intest" type="simulated_apriltag_broadcaster.py" respawn="false"
@@ -19,6 +19,7 @@
     <include file="$(find local_sensing_intest)/launch/transforms_replay.launch">
         <arg name="num_of_bots" value="$(arg num_of_bots)" />
         <arg name="fixed_frame_origin_tag" value="$(arg num_of_bots)" />
+        <arg name="odom_est_type" value="rigid_joint" />
     </include>
 
     

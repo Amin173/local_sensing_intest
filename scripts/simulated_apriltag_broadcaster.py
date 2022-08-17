@@ -92,6 +92,9 @@ def main(num_of_tags, csv_filename):
         ang = _rotation_matrix_to_euler_angles(ang_2_q((2 * pi * i / (int(num_of_tags) - 1)) + pi / 2 * (i%2)) )
         p[-1] = ang
 
+        if i == num_bots:
+            p = p0
+
         data[idx] = tuple(p)
 
     data['time'] = -1

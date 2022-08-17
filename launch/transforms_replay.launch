@@ -5,6 +5,7 @@
     <arg name="fixed_frame" default="odom" />
     <arg name="fixed_frame_origin_tag" />
     <arg name="num_of_bots" />
+    <arg name="odom_est_type" default="linear"/>
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="map_broadcaster"
           args="0 0 0 0 0 0 world map"/>
@@ -15,7 +16,7 @@
 
     <node name="analyt_shape_broadcaster" pkg="local_sensing_intest" type="analyt_shape_broadcaster.py"
           respawn="true"
-          output="screen" args="$(arg num_of_bots) $(arg fixed_frame) $(arg fixed_frame_origin_tag)">
+          output="screen" args="$(arg num_of_bots) $(arg fixed_frame) $(arg fixed_frame_origin_tag) $(arg odom_est_type)">
     </node>
 
 </launch>
