@@ -13,7 +13,7 @@ class dataSaver:
     def __init__(self):
         self.df = pd.DataFrame()
         # self.saving_path = "/home/amin/Desktop/RAL-files/slam_simple_houghman_t0.csv"
-        self.saving_path = "/home/amin/Desktop/RAL-files/slam_localization_t0.csv"
+        self.saving_path = "/opt/ros/overlay_ws/RAL-files/slam_localization_t0.csv"
         counter = 0
         while exists(self.saving_path):
             counter += 1
