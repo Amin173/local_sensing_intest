@@ -8,15 +8,18 @@ from tf2_geometry_msgs import PointStamped
 import sys
 from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 from geometry_msgs.msg import Pose
+from numpy import ceil
 
 
 class Cloud:
-    def __init__(self, num_points):
+    def __init__(self, num_points, min_data_points=360):
+        rospy.logerr('Cloud num of points: %s', str(num_points))
         self.num_points = num_points
         self.ps = PointStamped()
         self.ps_transformed = PointStamped()
         self.cloud = PointCloud2()
-        self.stacking_factor = 30
+        self.stacking_factor = int(ceil(min_data_points / num_points))
+        rospy.logwarn('Number of stacking to botain dense cloud: %s', str(self.stacking_factor))
         self.stacking_iter = 0
         self.num_points = num_points
         self.points = []
@@ -137,7 +140,11 @@ def transform_cloud_full(cloud_in, target_frame, source_frame, time, timeout=1):
 if __name__ == '__main__':
     rospy.init_node('point_cloud_broadcaster')
     num_points = int(sys.argv[1])
-    cloud = Cloud(num_points)
+    try:
+        min_data_points = int(sys.argv[2])
+        cloud = Cloud(num_points, min_data_points)
+    except:
+        cloud = Cloud(num_points)
     tfBuffer = tf2_ros.Buffer(rospy.Duration(5))
     tf2_ros.TransformListener(tfBuffer)
     rospy.Subscriber("bot00_pose_offset", Pose, cloud.set_mean_pose)

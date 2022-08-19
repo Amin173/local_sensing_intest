@@ -184,7 +184,6 @@ class AnalyticModel:
             # Apply adjustment
             x = - COVi @ (C.T @ Q @ L + S.T @ P @ L)
             L += x
-            rospy.logerr('Test: %s', str(x))
             
         
         # Update vectors that take you from one bot to the next

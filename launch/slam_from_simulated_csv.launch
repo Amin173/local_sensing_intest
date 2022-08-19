@@ -4,12 +4,14 @@
 
 <launch>
 
-    <arg name="num_of_tags" default="49"/>
+    <arg name="num_of_tags" default="13"/>
     
     <!--Define number of bots used in the simulation-->
-    <arg name="num_of_bots" default="48"/>
+    <arg name="num_of_bots" default="12"/>
 
-    <arg name="csv_file" default="Example_48_bots.csv" />
+    <arg name="csv_file" default="Example_12_bots.csv" />
+
+    <arg name="min_datapoints" default="180"/>
 
     <!--     AprilTag -->
     <node name="get_apriltag_data" pkg="local_sensing_intest" type="simulated_apriltag_broadcaster.py" respawn="false"
@@ -45,7 +47,7 @@
     <!-- PointCloud -->
     <node name="point_cloud2_broadcaster" pkg="local_sensing_intest" type="point_cloud2_broadcaster_replay.py"
           respawn="true"
-          output="screen" args="$(arg num_of_bots)"/>
+          output="screen" args="$(arg num_of_bots) $(arg min_datapoints)"/>
     <node name="pc_frame_transform" pkg="local_sensing_intest" type="pc_frame_transform.py"
           respawn="true" output="screen"/>
 
