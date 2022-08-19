@@ -40,15 +40,15 @@ def getTime_data(time, num_bots, data):
     file_dt = data[1, 0] - data[0, 0]
 
     # calculate index for given time and timestep:
-    idx = int(np.round(time / file_dt * 1, 0))
+    idx = int(np.round(time / file_dt * 2, 0))
 
     tmp = data[idx, 1:].reshape((num_bots, 7))
 
-    positions = tmp[:, :2]
+    positions = tmp[:, :2] / 8
     velocities = tmp[:, 2:4]
     norms = tmp[:, 4:6]
     angles = np.arctan2(norms[:, 1], norms[:, 0])
-    ranges = tmp[:, 6]
+    ranges = tmp[:, 6] / 8
 
     # return needed data only
     return positions, angles, ranges

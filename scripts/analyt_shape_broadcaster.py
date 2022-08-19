@@ -132,7 +132,7 @@ class AnalyticModel:
         theta = []
 
         # Max distance between bots
-        lmax = 150/20#20
+        lmax = 150/20 / 8#20
 
         # Bot normal direction angles
         X = X.reshape(self.num_of_bots)
