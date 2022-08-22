@@ -165,7 +165,7 @@ class UtilFunctions:
                         self.test("vac")
                         rospy.sleep(1)
                     self.vac_state = True
-                self.opt = "move_in_jammed"
+                self.opt = "move_in_jammed" # TODO: changed this line!
             # self.opt = "c-shape"
             print("moving - desired direction:", self.des_dir, "average dist:",
                   np.mean(self.stacked_normal_distances["0"]),

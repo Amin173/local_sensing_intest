@@ -2,7 +2,12 @@
 
 <launch>
 
+    <arg name="num_of_tags" default="13"/>
+    
+    <!--Define number of bots used in the simulation-->
     <arg name="num_of_bots" default="12"/>
+
+    <arg name="min_datapoints" default="720"/>
 
     <rosparam command="load" file="$(find local_sensing_intest)/config/config.yml" />
 
@@ -19,7 +24,7 @@
     <!-- PointCloud -->
     <node name="point_cloud2_broadcaster" pkg="local_sensing_intest" type="point_cloud2_broadcaster_replay.py"
           respawn="true"
-          output="screen" args="$(arg num_of_bots)"/>
+          output="screen" args="$(arg num_of_bots)  $(arg min_datapoints)"/>
     <node name="pc_frame_transform" pkg="local_sensing_intest" type="pc_frame_transform.py"
           respawn="true" output="screen"/>
 
@@ -58,5 +63,8 @@
     <!--                  bot08/dist/data bot09/imu/data bot09/dist/data bot10/imu/data bot10/dist/data bot11/imu/data bot11/dist/data-->
     <!--                  state map tf cloud2 control_cmd locomotion_stats"-->
     <!--          name="record"/>-->
+
+    <!--    Save csv data-->
+    <!-- <node type="csv_saver.py" name="csv_saver" pkg="local_sensing_intest" respawn="true" output="screen"/> -->
 
 </launch>

@@ -70,6 +70,15 @@ for i in range(num_tags):
     imu_pubs.append(imu_pub)
     data_pubs.append(data_pub)
 
+loc_publisher = rospy.Publisher("locomotion_stats", String, queue_size=10)
+
+
+# Function to publish locomotion from desired direction data:
+def publish_locomotion(direction):
+    global loc_publisher
+
+    locomotion_stats = {"mode": 'move', "dir": direction}
+    loc_publisher.publish(str(locomotion_stats))
 
 # Function to publish imu data
 def publish_imu(publisher, dev_id_str, imu_measurement, seq):
@@ -121,6 +130,48 @@ rospy.Subscriber("control_cmd", String, callback)
 # Callback to send range data
 rospy.Subscriber("state", String, callbackTime)
 
+# Define control algorithm:
+# Possible target direction
+quads = np.array([np.cos(np.linspace(0, np.pi * 2 - np.pi / 6, 12)),
+                    np.sin(np.linspace(0, np.pi * 2 - np.pi / 6, 12))]).T
+current_quad = 9
+current_spin = 1
+distance_threshold = 0.05
+
+def calculateDistancesInDirections(normals, ranges):
+    global quads
+    global current_quad
+    cosines = np.dot(normals, quads.T)
+    proj_distances = np.multiply(ranges, cosines.T)
+    average_distances = []
+    for c, d in zip(cosines.T, proj_distances):
+        av_dist = np.average(d[c > np.cos(np.pi / 4)])
+        average_distances.append(av_dist)
+
+    return [average_distances[(current_quad - 2) % 12],
+            average_distances[(current_quad - 1) % 12],
+            average_distances[current_quad],
+            average_distances[(current_quad + 1) % 12],
+            average_distances[(current_quad + 2) % 12]]
+
+def getNextControl(angles, ranges):
+    global quads
+    global current_quad
+    global current_spin
+    global distance_threshold
+
+    norm_bots = np.vstack((np.cos(angles), np.sin(angles))).T
+
+    av_distances = calculateDistancesInDirections(norm_bots, ranges)
+    if av_distances[2] < distance_threshold:
+        diff = np.argmax(av_distances) - 2
+        current_quad += int(np.sign(diff))
+        current_quad = current_quad % 12
+
+        if diff * current_spin > 0:
+            current_spin *= -1
+
+
 # Define rate at which to run simulation
 seq = 0
 rate = rospy.Rate(20)
@@ -137,6 +188,9 @@ while not rospy.is_shutdown() and now < max_time:
         positions, angles, ranges = getTime_data(now, num_bots, csv_data)
         #ranges = np.flip(ranges)
         
+        getNextControl(angles, ranges)
+
+        publish_locomotion(quads[current_quad])
 
         # for each tag generate data and publish
         for i, (imu_p, range_p, imu_d, range_d) in enumerate(zip(imu_pubs, range_pubs, angles, ranges)):

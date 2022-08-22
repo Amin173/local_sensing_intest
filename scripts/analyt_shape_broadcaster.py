@@ -132,7 +132,7 @@ class AnalyticModel:
         theta = []
 
         # Max distance between bots
-        lmax = 150/20#20
+        lmax = .15/2 * np.tan(np.pi / self.num_of_bots) / np.sin(np.pi / 12) * 100#150/20#20 
 
         # Bot normal direction angles
         X = X.reshape(self.num_of_bots)
@@ -155,7 +155,8 @@ class AnalyticModel:
         # Method to calculate distance between bots
         if self.estimator_model == 'rigid_joint':      # rigid_joint
             #L = lmax * np.sqrt(2 + 2 * np.cos(diff + 2 * np.pi / self.num_of_bots))
-            L = 2 * lmax * np.cos(.5 * (diff + 2 * np.pi / self.num_of_bots))
+            #L = 2 * lmax * np.cos(.5 * (diff + 2 * np.pi / self.num_of_bots))
+            L = 2 * lmax * np.cos(.5 * diff)
         elif self.estimator_model == 'linear':         # ransac regressor
             L = (155.93 - 0.8547 * 180 / np.pi * np.abs(diff)) / 10.
         else:
