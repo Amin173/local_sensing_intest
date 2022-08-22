@@ -45,11 +45,11 @@ def getTime_data(time, num_bots, data):
 
     tmp = data[idx, 1:].reshape((num_bots, 7))
 
-    positions = tmp[:, :2] / 8
+    positions = tmp[:, :2]
     velocities = tmp[:, 2:4]
     norms = tmp[:, 4:6]
     angles = np.arctan2(norms[:, 1], norms[:, 0])
-    ranges = tmp[:, 6] / 8
+    ranges = tmp[:, 6]
 
     # return needed data only
     return positions, angles, ranges
