@@ -35,8 +35,8 @@
 
     <!-- Controller -->
     <!--    add delay to motion_planner!-->
-    <node pkg="local_sensing_intest" name="motion_planner" type="motion_planner.py" args="$(arg num_of_bots)"
-          output="screen"/>
+    <!-- <node pkg="local_sensing_intest" name="motion_planner" type="motion_planner.py" args="$(arg num_of_bots)" -->
+          <!-- output="screen"/> -->
     <!--<node pkg="local_sensing_intest" name="vacuum" type="motion_test.py" args="vac" respawn="true"/>-->
     <param name="engulfed" type="bool" value="True" />
 
@@ -78,7 +78,7 @@
           output="screen"/>
 
     <!--    Save csv data-->
-    <node type="csv_saver.py" name="csv_saver" pkg="local_sensing_intest" respawn="true" output="screen"/>
+    <!-- <node type="csv_saver.py" name="csv_saver" pkg="local_sensing_intest" respawn="true" output="screen"/> -->
     
 
 </launch>
