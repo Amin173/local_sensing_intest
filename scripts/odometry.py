@@ -69,12 +69,9 @@ class odomBroadcaster:
         rospy.Subscriber("state", String, self.update_headings)
         rospy.Subscriber("locomotion_stats", String, self.update_des_dir)
         rospy.Subscriber("bot00_pose_offset", Pose, self.update_bot00_offset)
-        # rospy.Subscriber("motion_model", Twist, self.update_from_vel_model)
-        # rospy.Subscriber("point_cloud_pose_est", PoseWithCovarianceStamped, self.update_pos_reg)
-        # for i in range(self.num_of_bots):
-        #     rospy.Subscriber("bot%s/dist/data" % self.key(i), Range, self.update_range_sensors)
-        # rospy.Subscriber("bot%s/imu/data" % self.key(i), Imu, self.update_range_sensors)
 
+
+    # Gets the pose estimate from 
     def update_headings(self, msg):
         data_dict = eval(msg.data)
         self.prev_heading = self.heading
@@ -82,6 +79,7 @@ class odomBroadcaster:
         for i in range(self.num_of_bots + 1):
             self.qx[i] = data_dict[self.key(i)][0]
             self.qz[i] = data_dict[self.key(i)][1]
+            # heading of each sub-unit
             self.heading[i] = data_dict[self.key(i)][2]
         ground_truth = PoseWithCovarianceStamped()
         ground_truth.header.frame_id = 'map'
@@ -104,32 +102,18 @@ class odomBroadcaster:
         ground_truth.pose.covariance = pose_covariance
         self.pub_ground_truth.publish(ground_truth)
 
-    def update_range_sensors(self, msg):
-        bot_id = msg.header.frame_id
-        bot_number = int(bot_id[3:])
-        self.range_data[bot_number] = msg.range
-
-    # def update_pos_reg(self, msg):
-    #     if (rospy.Time.now() - self.t0) > rospy.Duration(10):
-    #         # pass
-    #         self.x = msg.pose.pose.position.x
-    #         self.y = msg.pose.pose.position.y
-
+    # Position of base link calculated with slam
     def update_bot00_offset(self, msg):
         self.bott00_offset_x = msg.position.x * 100
         self.bott00_offset_y = msg.position.y * 100
 
+    # updates the desired direction according to the controller
     def update_des_dir(self, msg):
         data_dict = eval(msg.data)
         self.des_dir = data_dict['dir']
         V = 0.7
         self.vx = V * self.des_dir[0]
         self.vy = V * self.des_dir[1]
-
-    def update_from_vel_model(self, msg):
-        self.vx = msg.linear.x
-        self.vy = msg.linear.y
-        self.vth = msg.angular.z
 
     def key(self, i):
         if i < 10:
@@ -138,16 +122,19 @@ class odomBroadcaster:
             key = str(i)
         return key
 
+    # Calculates next step position of base link
     def update(self):
         while not rospy.is_shutdown():
             self.current_time = rospy.Time.now()
 
-            # compute odometry in a typical way given the velocities of the robot
+            # Correct the heading angles of the sub-units with the pi/2 shift
             theta = (self.heading + (np.arange(self.num_of_bots + 1)%2) * 90) * np.pi / 180.
-            #theta = (self.heading + np.array([0, 90, 0, 90, 0, 90, 0, 90, 0, 90, 0, 90, 0])) * np.pi / 180
+
+
             # heading_dirs = np.vstack(([np.cos(theta)], [np.sin(theta)])).T
             dt = (self.current_time - self.last_time).to_sec()
 
+            # Calculate the displacement of the base link from the previous step and the current step
             if self.bott00_offset_x_array[1] == 0:
                 self.bott00_offset_x_array[0] = self.bott00_offset_x
                 self.bott00_offset_y_array[0] = self.bott00_offset_y
@@ -159,12 +146,17 @@ class odomBroadcaster:
                 self.bott00_offset_x_array[1] = self.bott00_offset_x
                 self.bott00_offset_y_array[1] = self.bott00_offset_y
 
+            # Calculate average velocity with the last two steps
+            # TODO: add filter
             self.vx_or = -(self.bott00_offset_x_array[1] - self.bott00_offset_x_array[0]) / dt
             self.vy_or = -(self.bott00_offset_y_array[1] - self.bott00_offset_y_array[0]) / dt
 
+            # vth is the angular velocity of the base link sub-unit in rad / s
             self.vth = ((-self.heading[0] + self.prev_heading[0])*np.pi/180) / dt
-            delta_x = (self.vx + self.vx_or) * dt / 100
-            delta_y = - (self.vy - self.vy_or) * dt / 100
+
+            # Calculate scaled version of desired velocity and add the 
+            delta_x = self.vx * dt / 100#(self.vx + self.vx_or) * dt / 100
+            delta_y = self.vy * dt / 100#- (self.vy - self.vy_or) * dt / 100
 
             self.x += delta_x
             self.y += delta_y

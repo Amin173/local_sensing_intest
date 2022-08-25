@@ -41,7 +41,7 @@ def getTime_data(time, num_bots, data):
     file_dt = data[1, 0] - data[0, 0]
 
     # calculate index for given time and timestep:
-    idx = int(np.round(time / file_dt * 2, 0))
+    idx = int(np.round(time / file_dt * 1, 0))
 
     tmp = data[idx, 1:].reshape((num_bots, 7))
 
@@ -99,7 +99,7 @@ def main(num_of_tags, csv_filename):
 
     data['time'] = -1
 
-    # Setup ROS
+    # Setup ROS # state is a tuple of x, y, and angle
     pub = rospy.Publisher('state', String, queue_size=10)
     rospy.init_node('AprilTags', anonymous=False)
 
