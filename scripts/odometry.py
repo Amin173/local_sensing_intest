@@ -42,7 +42,7 @@ class odomBroadcaster:
 
         self.last_time = rospy.Time.now()
         self.current_time = rospy.Time.now()
-        self.r = rospy.Rate(10)
+        self.r = rospy.Rate(100)
 
         # Publishers
         self.odom_pub = rospy.Publisher("odom/vel_model", Odometry, queue_size=50)
@@ -55,6 +55,7 @@ class odomBroadcaster:
         self.bott00_offset_y = 0
         self.bott00_offset_x_array = np.array([0, 0])
         self.bott00_offset_y_array = np.array([0, 0])
+        self.new_data = False
 
         odom_quat = tf.transformations.quaternion_from_euler(0, 0, self.th)
         self.odom_broadcaster.sendTransform(
@@ -106,12 +107,13 @@ class odomBroadcaster:
     def update_bot00_offset(self, msg):
         self.bott00_offset_x = msg.position.x * 100
         self.bott00_offset_y = msg.position.y * 100
+        self.new_data = True
 
     # updates the desired direction according to the controller
     def update_des_dir(self, msg):
         data_dict = eval(msg.data)
         self.des_dir = data_dict['dir']
-        V = 0.7
+        V = 2.4 #0.7
         self.vx = V * self.des_dir[0]
         self.vy = V * self.des_dir[1]
 
@@ -141,22 +143,26 @@ class odomBroadcaster:
                 self.bott00_offset_x_array[1] = self.bott00_offset_x
                 self.bott00_offset_y_array[1] = self.bott00_offset_y
             else:
-                self.bott00_offset_x_array[0] = self.bott00_offset_x_array[1]
-                self.bott00_offset_y_array[0] = self.bott00_offset_y_array[1]
-                self.bott00_offset_x_array[1] = self.bott00_offset_x
-                self.bott00_offset_y_array[1] = self.bott00_offset_y
+                if self.new_data:
+                    self.bott00_offset_x_array[0] = self.bott00_offset_x_array[1]
+                    self.bott00_offset_y_array[0] = self.bott00_offset_y_array[1]
+                    self.bott00_offset_x_array[1] = self.bott00_offset_x
+                    self.bott00_offset_y_array[1] = self.bott00_offset_y
+                    self.new_data = False
 
             # Calculate average velocity with the last two steps
             # TODO: add filter
             self.vx_or = -(self.bott00_offset_x_array[1] - self.bott00_offset_x_array[0]) / dt
             self.vy_or = -(self.bott00_offset_y_array[1] - self.bott00_offset_y_array[0]) / dt
 
+            rospy.logerr("Average speed: %s", str(np.linalg.norm([self.vx_or, self.vy_or])))
+
             # vth is the angular velocity of the base link sub-unit in rad / s
             self.vth = ((-self.heading[0] + self.prev_heading[0])*np.pi/180) / dt
 
             # Calculate scaled version of desired velocity and add the 
-            delta_x = self.vx * dt / 100#(self.vx + self.vx_or) * dt / 100
-            delta_y = self.vy * dt / 100#- (self.vy - self.vy_or) * dt / 100
+            delta_x = self.vx #(self.vx + self.vy_or) * dt / 100
+            delta_y = -self.vy #-(self.vy - self.vx_or) * dt / 100
 
             self.x += delta_x
             self.y += delta_y
@@ -168,19 +174,19 @@ class odomBroadcaster:
             # since all odometry is 6DOF we'll need a quaternion created from yaw
             odom_quat = tf.transformations.quaternion_from_euler(0, 0, self.th)
 
-            pose_covariance = [0.0005, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                               0.0, 0.0005, 0.0, 0.0, 0.0, 0.0,
+            pose_covariance = [0.05, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                               0.0, 0.05, 0.0, 0.0, 0.0, 0.0,
                                                0.0, 0.0, 0.0000, 0.0, 0.0, 0.0,
                                                0.0, 0.0, 0.0, 0.0000, 0.0, 0.0,
                                                0.0, 0.0, 0.0, 0.0, 0.0000, 0.0,
-                                               0.0, 0.0, 0.0, 0.0, 0.0, 0.001]
+                                               0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
-            twist_covariance = [0.00001, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                               0.0, 0.00001, 0.0, 0.0, 0.0, 0.0,
+            twist_covariance = [0.01, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                               0.0, 0.01, 0.0, 0.0, 0.0, 0.0,
                                                0.0, 0.0, 0.0000, 0.0, 0.0, 0.0,
                                                0.0, 0.0, 0.0, 0.0000, 0.0, 0.0,
                                                0.0, 0.0, 0.0, 0.0, 0.0000, 0.0,
-                                               0.0, 0.0, 0.0, 0.0, 0.0, 0.0001]
+                                               0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
             # first, we'll publish the transform over tf
             self.odom_broadcaster.sendTransform(

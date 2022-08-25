@@ -153,5 +153,5 @@ if __name__ == '__main__':
             key = str(0) + str(i)
         else:
             key = str(i)
-        rospy.Subscriber("bot%s/dist/data" % key, Range, cloud.callback, i)
+        rospy.Subscriber("bot%s/dist/data" % key, Range, cloud.callback, i, queue_size=num_points + 1)
     rospy.spin()

@@ -11,7 +11,7 @@
 
     <arg name="csv_file" default="Example_24_bots.csv" />
 
-    <arg name="min_datapoints" default="360"/>
+    <arg name="min_datapoints" default="180"/>
 
     <!--     AprilTag -->
     <node name="get_apriltag_data" pkg="local_sensing_intest" type="simulated_apriltag_broadcaster.py" respawn="false"
