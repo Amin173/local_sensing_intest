@@ -4,12 +4,12 @@
 
 <launch>
 
-    <arg name="num_of_tags" default="97"/>
+    <arg name="num_of_tags" default="13"/>
     
     <!--Define number of bots used in the simulation-->
-    <arg name="num_of_bots" default="96"/>
+    <arg name="num_of_bots" default="12"/>
 
-    <arg name="csv_file" default="Example_96_bots.csv" />
+    <arg name="csv_file" default="Example_12_bots.csv" />
 
     <arg name="min_datapoints" default="360"/>
 
@@ -31,14 +31,7 @@
           respawn="true"/>
 
     <!--     Set initial pose using AprilTags, I have to change this to a custom initial pose from CSV, or create an apriltag simulator from CSV -->
-    <node name="set_initial_pose" pkg="local_sensing_intest" type="initial_pose_from_apriltags.py" args="$(arg num_of_tags)" respawn="false"/>
-
-    <!-- Controller -->
-    <!--    add delay to motion_planner!-->
-    <!-- <node pkg="local_sensing_intest" name="motion_planner" type="motion_planner.py" args="$(arg num_of_bots)" -->
-          <!-- output="screen"/> -->
-    <!--<node pkg="local_sensing_intest" name="vacuum" type="motion_test.py" args="vac" respawn="true"/>-->
-    <param name="engulfed" type="bool" value="True" />
+    <!-- <node name="set_initial_pose" pkg="local_sensing_intest" type="initial_pose_from_apriltags.py" args="$(arg num_of_tags)" respawn="false"/> -->
 
     <rosparam command="load" file="$(find local_sensing_intest)/config/config.yml" />
 
@@ -56,14 +49,11 @@
 
 
     <!--    Here the virutal TCP.launch file should start-->
-    <node name="tpc_all" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="$(arg num_of_tags) $(arg num_of_bots) $(arg csv_file)" output="screen"
+    <node name="tcp_all" pkg="local_sensing_intest" type="simulated_robot_tcp.py" args="$(arg num_of_tags) $(arg num_of_bots) $(arg csv_file)" output="screen"
         respawn="true"/>
 
 
-    <!--    PointCloud visualization-->
-    <!--    <node pkg="local_sensing_intest" type="point_cloud_visualization.py" name="point_cloud_visualization"-->
-    <!--          output="screen"-->
-    <!--          respawn="true"/>-->
+    <!--    Feature extractor-->
     <node name="pc_feature_extractor" pkg="local_sensing_intest" type="pcl_feature_ext.py" respawn="true"
           output="screen"/>
 
@@ -74,8 +64,8 @@
     <node name="odometry" pkg="local_sensing_intest" type="odometry.py" args="$(arg num_of_bots)" respawn="true" output="screen"/>
 
     <!--    IMU frame converter-->
-    <node name="imu_frame_conversion" pkg="local_sensing_intest" type="imu_frame_conversion.py" respawn="true" args="$(arg num_of_bots)"
-          output="screen"/>
+    <!-- <node name="imu_frame_conversion" pkg="local_sensing_intest" type="imu_frame_conversion.py" respawn="true" args="$(arg num_of_bots)" -->
+          <!-- output="screen"/> -->
 
     <!--    Save csv data-->
     <!-- <node type="csv_saver.py" name="csv_saver" pkg="local_sensing_intest" respawn="true" output="screen"/> -->

@@ -7,6 +7,7 @@ from ruamel.yaml import YAML
 from pathlib import Path
 import tf2_ros
 import sys
+import numpy as np
 
 class InitialPose:
     def __init__(self, num_tags):
@@ -33,11 +34,13 @@ class InitialPose:
         data_dict = eval(data.data)
         self.x0 = (data_dict['00'][0] - data_dict[self.num_bots_str][0]) / 100
         self.y0 = -(data_dict['00'][1] - data_dict[self.num_bots_str][1]) / 100
-        self.th0 = -(data_dict['00'][2] - data_dict[self.num_bots_str][2]) * 3.14 / 180
+        self.th0 = -(data_dict['00'][2] - data_dict[self.num_bots_str][2]) * np.pi / 180
         if not (self.x0 == 0 or self.y0 == 0 or self.th0 == 0):
             rospy.set_param('/config/initial_pose/x', self.x0)
             rospy.set_param('/config/initial_pose/y', self.y0)
             rospy.set_param('/config/initial_pose/a', self.th0)
+
+            rospy.logerr("Received: %s", str(self.th0))
             self.isSet = True
 
 

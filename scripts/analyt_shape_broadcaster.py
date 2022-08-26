@@ -136,7 +136,6 @@ class AnalyticModel:
 
         # Bot normal direction angles
         X = X.reshape(self.num_of_bots)
-        
 
         ### Precalculate variables that will later be nidded
         # Calculate angles, offset 90 deg for odd numbered bots and constrain between - pi to pi
@@ -249,7 +248,7 @@ if __name__ == '__main__':
     # rospy.Subscriber("odometry/filtered_map",
     #                  Odometry,
     #                  broadcaster.base_link_odom)
-    rate = rospy.Rate(20.0)
+    rate = rospy.Rate(10.0)
     while not rospy.is_shutdown():
         #rospy.logerr("Analyt_model, Number of bots: %s", str(broadcaster.num_of_bots))
         try:

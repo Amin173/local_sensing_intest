@@ -7,7 +7,7 @@
     <!--Define number of bots used in the simulation-->
     <arg name="num_of_bots" default="12"/>
 
-    <arg name="min_datapoints" default="720"/>
+    <arg name="min_datapoints" default="360"/>
 
     <rosparam command="load" file="$(find local_sensing_intest)/config/config.yml" />
 

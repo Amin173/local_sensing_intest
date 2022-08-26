@@ -174,7 +174,7 @@ def getNextControl(angles, ranges):
 
 # Define rate at which to run simulation
 seq = 0
-rate = rospy.Rate(20)
+rate = rospy.Rate(10)
 now = -1.
 while not rospy.is_shutdown() and now < max_time:
     # increment sequence time

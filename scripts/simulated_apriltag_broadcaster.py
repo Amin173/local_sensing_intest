@@ -72,7 +72,7 @@ def main(num_of_tags, csv_filename):
 
     # Generate offset point
     
-    p0 = array([-3.2454133530086167, 2.8524046300249237, 0.])
+    p0 = array([0, 0, 0])#[-3.2454133530086167, 2.8524046300249237, 0.])
 
     # Define dummy data for case where csv is not used
     ang_2_q = lambda alf: R.from_euler('z', -alf, degrees=False).as_matrix()
@@ -104,7 +104,7 @@ def main(num_of_tags, csv_filename):
     rospy.init_node('AprilTags', anonymous=False)
 
 
-    rate = rospy.Rate(10) # in Hz
+    rate = rospy.Rate(5) # in Hz
 
     tmp = rospy.get_rostime()
     t0 = tmp.secs + tmp.nsecs * 1e-9
@@ -120,11 +120,17 @@ def main(num_of_tags, csv_filename):
         # For each node update data
         for i, k in enumerate(list(data.keys())[:-2]):
             angle = (angles[i] - pi/2 * (i%2)) * 180 / pi
+            
             if angle > 180:
                 angle -= 360
             elif angle < -180:
                 angle += 360
+            
             data[k] = (positions[i, 0] - p0[0], positions[i, 1] - p0[1], angle)
+            
+            
+
+        
 
         # Publish result
         pub.publish(str(data))
