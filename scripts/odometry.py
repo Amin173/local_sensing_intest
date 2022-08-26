@@ -42,7 +42,7 @@ class odomBroadcaster:
 
         self.last_time = rospy.Time.now()
         self.current_time = rospy.Time.now()
-        self.r = rospy.Rate(100)
+        self.r = rospy.Rate(20)
 
         # Publishers
         self.odom_pub = rospy.Publisher("odom/vel_model", Odometry, queue_size=50)
@@ -113,7 +113,7 @@ class odomBroadcaster:
     def update_des_dir(self, msg):
         data_dict = eval(msg.data)
         self.des_dir = data_dict['dir']
-        V = 2.4 #0.7
+        V = 0.7
         self.vx = V * self.des_dir[0]
         self.vy = V * self.des_dir[1]
 
@@ -143,12 +143,12 @@ class odomBroadcaster:
                 self.bott00_offset_x_array[1] = self.bott00_offset_x
                 self.bott00_offset_y_array[1] = self.bott00_offset_y
             else:
-                if self.new_data:
-                    self.bott00_offset_x_array[0] = self.bott00_offset_x_array[1]
-                    self.bott00_offset_y_array[0] = self.bott00_offset_y_array[1]
-                    self.bott00_offset_x_array[1] = self.bott00_offset_x
-                    self.bott00_offset_y_array[1] = self.bott00_offset_y
-                    self.new_data = False
+                #if self.new_data:
+                self.bott00_offset_x_array[0] = self.bott00_offset_x_array[1]
+                self.bott00_offset_y_array[0] = self.bott00_offset_y_array[1]
+                self.bott00_offset_x_array[1] = self.bott00_offset_x
+                self.bott00_offset_y_array[1] = self.bott00_offset_y
+                #    self.new_data = False
 
             # Calculate average velocity with the last two steps
             # TODO: add filter
@@ -161,8 +161,8 @@ class odomBroadcaster:
             self.vth = ((-self.heading[0] + self.prev_heading[0])*np.pi/180) / dt
 
             # Calculate scaled version of desired velocity and add the 
-            delta_x = self.vx #(self.vx + self.vy_or) * dt / 100
-            delta_y = -self.vy #-(self.vy - self.vx_or) * dt / 100
+            delta_x = (self.vx + self.vy_or) * dt / 100
+            delta_y = -(self.vy - self.vx_or) * dt / 100
 
             self.x += delta_x
             self.y += delta_y
@@ -209,7 +209,7 @@ class odomBroadcaster:
             # set the velocity
             odom.child_frame_id = "bot00_analyt"
             odom.twist.twist = Twist(
-                Vector3((self.vx + self.vx_or)/100, -(self.vy - self.vy_or)/100, 0),
+                Vector3(delta_x / dt, delta_y / dt, 0),
                 Vector3(0, 0, self.vth))
             odom.twist.covariance = twist_covariance
 
