@@ -104,7 +104,7 @@ def main(num_of_tags, csv_filename):
     rospy.init_node('AprilTags', anonymous=False)
 
 
-    rate = rospy.Rate(5) # in Hz
+    rate = rospy.Rate(10) # in Hz
 
     tmp = rospy.get_rostime()
     t0 = tmp.secs + tmp.nsecs * 1e-9

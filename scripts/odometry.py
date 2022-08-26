@@ -155,18 +155,20 @@ class odomBroadcaster:
             self.vx_or = -(self.bott00_offset_x_array[1] - self.bott00_offset_x_array[0]) / dt
             self.vy_or = -(self.bott00_offset_y_array[1] - self.bott00_offset_y_array[0]) / dt
 
-            rospy.logerr("Average speed: %s", str(np.linalg.norm([self.vx_or, self.vy_or])))
+           
 
             # vth is the angular velocity of the base link sub-unit in rad / s
             self.vth = ((-self.heading[0] + self.prev_heading[0])*np.pi/180) / dt
 
-            # Calculate scaled version of desired velocity and add the 
-            delta_x = (self.vx + self.vy_or) * dt / 100
-            delta_y = -(self.vy - self.vx_or) * dt / 100
+
+            delta_x = (self.vx + self.vx_or) * dt / 100
+            delta_y = -(self.vy - self.vy_or) * dt / 100
 
             self.x += delta_x
             self.y += delta_y
-            self.th = -(theta[0] - theta[-1])
+            self.th = -(theta[0] - theta[-1])       # Last element in theta is the reference tag position
+            
+            #rospy.logerr("Average speed: %s", str(len(theta)))
 
             # self.x_vel_model += delta_x
             # self.y_vel_model += delta_y
@@ -174,19 +176,19 @@ class odomBroadcaster:
             # since all odometry is 6DOF we'll need a quaternion created from yaw
             odom_quat = tf.transformations.quaternion_from_euler(0, 0, self.th)
 
-            pose_covariance = [0.05, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                               0.0, 0.05, 0.0, 0.0, 0.0, 0.0,
+            pose_covariance = [0.0005, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                               0.0, 0.0005, 0.0, 0.0, 0.0, 0.0,
                                                0.0, 0.0, 0.0000, 0.0, 0.0, 0.0,
                                                0.0, 0.0, 0.0, 0.0000, 0.0, 0.0,
                                                0.0, 0.0, 0.0, 0.0, 0.0000, 0.0,
-                                               0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+                                               0.0, 0.0, 0.0, 0.0, 0.0, 0.001]
 
-            twist_covariance = [0.01, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                               0.0, 0.01, 0.0, 0.0, 0.0, 0.0,
+            twist_covariance = [0.00001, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                               0.0, 0.00001, 0.0, 0.0, 0.0, 0.0,
                                                0.0, 0.0, 0.0000, 0.0, 0.0, 0.0,
                                                0.0, 0.0, 0.0, 0.0000, 0.0, 0.0,
                                                0.0, 0.0, 0.0, 0.0, 0.0000, 0.0,
-                                               0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+                                               0.0, 0.0, 0.0, 0.0, 0.0, 0.0001]
 
             # first, we'll publish the transform over tf
             self.odom_broadcaster.sendTransform(
@@ -209,7 +211,7 @@ class odomBroadcaster:
             # set the velocity
             odom.child_frame_id = "bot00_analyt"
             odom.twist.twist = Twist(
-                Vector3(delta_x / dt, delta_y / dt, 0),
+                Vector3((self.vx + self.vx_or)/100, -(self.vy - self.vy_or)/100, 0),
                 Vector3(0, 0, self.vth))
             odom.twist.covariance = twist_covariance
 
