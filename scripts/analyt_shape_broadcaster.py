@@ -98,8 +98,6 @@ class AnalyticModel:
         else:
             self.heading_angles_rel[bot_number] = euler
 
-        self.initial_imu_sample[bot_number] = True
-
         
 
     # callback for apriltags
@@ -125,10 +123,9 @@ class AnalyticModel:
         #self.pose_offset_pub.publish(pose_offset)
 
         # Publish transforms
-        if sum(self.initial_imu_sample) == self.num_of_bots:
-            analyt_input = np.array(self.heading_angles_rel).reshape((1, self.num_of_bots))
-            
-            rel_poses = self.analyt_model(analyt_input, best_fit=False)
+        analyt_input = np.array(self.heading_angles_rel).reshape((1, self.num_of_bots))
+        try:
+            rel_poses = self.analyt_model(analyt_input)
             self.x_rel = rel_poses[:, 0] #/ 100
             self.y_rel = - rel_poses[:, 1] #/ 100
 
@@ -139,8 +136,9 @@ class AnalyticModel:
             pose_offset.position.x = np.mean(self.x_rel) - self.x_rel[0]
             pose_offset.position.y = np.mean(self.y_rel) - self.y_rel[0]
             pose_offset.position.z = -self.heading_angles_rel[0]
-            #self.pose_offset_pub.publish(pose_offset)
-            
+            self.pose_offset_pub.publish(pose_offset)
+        except:
+            rospy.logerr("Error generating geometry")
 
     def analyt_model(self, X, best_fit=True):
         
@@ -162,6 +160,8 @@ class AnalyticModel:
         # Calculate angles, offset 90 deg for odd numbered bots and constrain between - pi to pi
         normals = (X + self.heading_angle_offsets)
         normals += (normals > np.pi) * (- 2 * np.pi) + (normals < - np.pi) * (2 * np.pi)
+
+        rospy.logerr(str(normals))
 
         # Calculate difference in angle, constrain between - pi to pi
         diff = np.roll(normals, -1) - normals
@@ -203,7 +203,7 @@ class AnalyticModel:
             Q = (C - CST * P) / CCT
 
             # Apply adjustment
-            x = -  (C.T @ Q @ L + S.T @ P @ L) # COVi @
+            x = - COVi @ (C.T @ Q @ L + S.T @ P @ L)
             L += x
             
         
@@ -239,9 +239,9 @@ if __name__ == '__main__':
     num_of_bots = sys.argv[1]
     frame_id = sys.argv[2]
     estimator_model = sys.argv[4]
-    apply_angle_corrections = False #sys.argv[5] == 'true'
+    apply_angle_corrections = sys.argv[5] == 'true'
 
-    # num_of_bots = "96"
+    # num_of_bots = "12"
     # frame_id = "odom"
     # estimator_model = "linear"
     # apply_angle_corrections = False
@@ -254,7 +254,7 @@ if __name__ == '__main__':
     # rospy.Subscriber("odometry/filtered_map",
     #                  Odometry,
     #                  broadcaster.base_link_odom)
-    rate = rospy.Rate(2.0)
+    rate = rospy.Rate(10.0)
     while not rospy.is_shutdown():
         #rospy.logerr("Analyt_model, Number of bots: %s", str(broadcaster.num_of_bots))
         try:

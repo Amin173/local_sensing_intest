@@ -41,7 +41,7 @@ def getTime_data(time, num_bots, data):
     file_dt = data[1, 0] - data[0, 0]
 
     # calculate index for given time and timestep:
-    idx = int(np.round(time / file_dt * .5, 0))
+    idx = int(np.round(time / file_dt * 1, 0))
 
     tmp = data[idx, 1:].reshape((num_bots, 7))
 
@@ -105,7 +105,7 @@ def main(num_bots, csv_filename):
     rospy.init_node('AprilTags', anonymous=False)
 
 
-    rate = rospy.Rate(4) # in Hz
+    rate = rospy.Rate(10) # in Hz
 
     t0 = rospy.Time.now().to_sec()
     rospy.set_param('sync_time', t0)
