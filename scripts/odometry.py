@@ -8,6 +8,7 @@ import numpy as np
 from std_msgs.msg import String
 from numpy import array
 import sys
+from time import sleep
 
 class odomBroadcaster:
 
@@ -230,7 +231,7 @@ class odomBroadcaster:
 
 
 if __name__ == '__main__':
-    
+    sleep(1.5)
     rospy.init_node('odometry_publisher')
     try:
         num_nodes = int(sys.argv[1])
