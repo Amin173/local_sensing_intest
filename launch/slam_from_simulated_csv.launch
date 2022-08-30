@@ -5,11 +5,11 @@
 <launch>
     
     <!--Define number of bots used in the simulation-->
-    <arg name="num_of_bots" default="12"/>
+    <arg name="num_of_bots" default="96"/>
 
-    <arg name="csv_file" default="Example_12_bots.csv" />
+    <arg name="csv_file" default="Example_96_bots.csv" />
 
-    <arg name="min_datapoints" default="360"/>
+    <arg name="min_datapoints" default="180"/>
 
     <!--     Ground Truth data-->
     <node name="ground_truth_pose" pkg="local_sensing_intest" type="simulated_apriltag_broadcaster.py" respawn="false"

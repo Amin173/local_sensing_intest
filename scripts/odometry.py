@@ -41,7 +41,7 @@ class odomBroadcaster:
 
         self.last_time = rospy.Time.now()
         self.current_time = rospy.Time.now()
-        self.r = rospy.Rate(10)
+        self.r = rospy.Rate(4)
 
         # Publishers
         self.odom_pub = rospy.Publisher("odom/vel_model", Odometry, queue_size=50)
