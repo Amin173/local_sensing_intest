@@ -5,10 +5,10 @@
     <arg name="num_of_tags" default="13"/>
 
     <!--     Set initial pose using AprilTags -->
-    <!-- <node name="set_initial_pose" pkg="local_sensing_intest" type="initial_pose_from_apriltags.py" args="$(arg num_of_tags)" required="true"/> -->
+    <node name="set_initial_pose" pkg="local_sensing_intest" type="initial_pose_from_apriltags.py" args="$(arg num_of_tags)" required="true"/>
 
     <!-- Rosbag play -->
     <!--    <node pkg="rosbag" type="play" name="player" output="screen" args="&#45;&#45;clock $(env bag_file) -r 1"/>-->
-    <!-- <node pkg="rosbag" type="play" name="player" args="--clock $(env bag_file)"/> -->
+    <node pkg="rosbag" type="play" name="player" args="--clock $(env bag_file)"/>
 
 </launch>

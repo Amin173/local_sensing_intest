@@ -69,26 +69,6 @@ class AnalyticModel:
         # self.t.transform.rotation.w = self.imu_quaternions[bot_id, 3]
         self.br.sendTransform(self.t)
 
-        self.t.child_frame_id = "bot" + bot_id
-        bot_number = int(bot_id)
-        #self.t.header.stamp = rospy.Time.now()
-        
-        self.t.transform.translation.x = self.data[bot_id][0] - self.data['00'][0] + self.base_link_pose_x
-        self.t.transform.translation.y = self.data[bot_id][1] - self.data['00'][1] + self.base_link_pose_y
-        q = tf_conversions.transformations.quaternion_from_euler(0, 0, -self.data[bot_id][2] * np.pi / 180 - np.pi / 2 * (bot_number%2))
-        self.t.transform.rotation.x = q[0]
-        self.t.transform.rotation.y = q[1]
-        self.t.transform.rotation.z = q[2]
-        self.t.transform.rotation.w = q[3]
-        # self.t.transform.rotation.x = self.imu_quaternions[bot_id, 0]
-        # self.t.transform.rotation.y = self.imu_quaternions[bot_id, 1]
-        # self.t.transform.rotation.z = self.imu_quaternions[bot_id, 2]
-        # self.t.transform.rotation.w = self.imu_quaternions[bot_id, 3]
-        self.br.sendTransform(self.t)
-
-
-
-
     def base_link_pose(self, msg):
         data_dict = eval(msg.data)
         self.base_link_pose_x = (data_dict['00'][0] - data_dict[self.origin_tag][0]) / 100
@@ -129,11 +109,23 @@ class AnalyticModel:
         self.imu_quaternions[bot_id, :] = tf.transformations.quaternion_multiply(self.qr,
                                                                                  [msg.orientation.x, msg.orientation.y,
                                                                                   msg.orientation.z, msg.orientation.w])
+        bot_id = msg.header.frame_id
+        bot_number = int(bot_id[3:])
+        if (not self.rel_rotation_set[bot_number]) and self.cam_trnsfrm_recieved:
+            q = tf_conversions.transformations.quaternion_from_euler(0, 0, -self.heading_angles_rel[
+                bot_number] * np.pi / 180 + self.base_link_orientation)
+            q1_inv = [msg.orientation.x, msg.orientation.y, msg.orientation.z, - msg.orientation.w]
+            q2 = [q[0], q[1], q[2], q[3]]
+            self.imu_quaternion_offsets[bot_number, :] = tf.transformations.quaternion_multiply(q2, q1_inv)
+            self.rel_rotation_set[bot_number] = True
+        self.imu_quaternions[bot_id, :] = tf.transformations.quaternion_multiply(self.qr,
+                                                                                 [msg.orientation.x, msg.orientation.y,
+                                                                                  msg.orientation.z, msg.orientation.w])
 
     def analyt_model(self, X, best_fit=True):
         # Vector for distances between subunits
         L = []
-        t0 = time()
+        
         # Vector with direction angle between one bot and the next
         theta = []
 
@@ -197,9 +189,6 @@ class AnalyticModel:
 
         # calculate the positions of each bot
         rel_positions = np.vstack((np.zeros((1, 2)), np.cumsum(B, axis=0)[:-1, :]))
-        
-        t1 = time()
-        rospy.logerr("Calculation time: %s", str(t1 - t0))
         
         return rel_positions
 
