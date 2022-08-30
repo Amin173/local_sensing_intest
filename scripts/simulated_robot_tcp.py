@@ -40,7 +40,7 @@ def getTime_data(time, num_bots, data):
     file_dt = data[1, 0] - data[0, 0]
 
     # calculate index for given time and timestep:
-    idx = int(np.round(time / file_dt * 1, 0))
+    idx = int(np.round(time / file_dt * .25, 0))
 
     tmp = data[idx, 1:].reshape((num_bots, 7))
 
@@ -174,7 +174,7 @@ def getNextControl(angles, ranges):
 
 # Define rate at which to run simulation
 seq = 0
-rate = rospy.Rate(20)
+rate = rospy.Rate(2)
 now = -1.
 while not rospy.is_shutdown() and now < max_time:
     # increment sequence time

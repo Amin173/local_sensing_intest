@@ -12,6 +12,7 @@ import tf
 from sensor_msgs.msg import Range, Imu
 from std_msgs.msg import String
 import numpy as np
+from time import time
 
 class AnalyticModel:
     def __init__(self, frame_id, num_of_bots, origin_tag_id, estimator_model='linear'):
@@ -34,10 +35,15 @@ class AnalyticModel:
         self.imu_quaternion_offsets = np.zeros((self.num_of_bots, 4))
         self.heading_angles_rel = np.zeros(self.num_of_bots)
         self.heading_angle_offsets = 90 * (np.arange(self.num_of_bots) % 2)
+        self.heading_angle_offsets_exp = np.exp(1j * self.heading_angle_offsets)
         self.x_rel = np.zeros(self.num_of_bots)
         self.y_rel = np.zeros(self.num_of_bots)
         self.pose_offset_pub = rospy.Publisher("bot00_pose_offset", Pose, queue_size=50)
         self.data = {}
+        
+        # Variables to optimize model:
+        # Max distance between bots
+        self.lmax = .15/2 * np.tan(np.pi / self.num_of_bots) / np.sin(np.pi / 12) * 100 #150/20#20 
 
         if type(estimator_model) == None:
             self.estimator_model = 'linear'
@@ -127,17 +133,14 @@ class AnalyticModel:
     def analyt_model(self, X, best_fit=True):
         # Vector for distances between subunits
         L = []
-
+        t0 = time()
         # Vector with direction angle between one bot and the next
         theta = []
-
-        # Max distance between bots
-        lmax = .15/2 * np.tan(np.pi / self.num_of_bots) / np.sin(np.pi / 12) * 100 #150/20#20 
 
         # Bot normal direction angles
         X = X.reshape(self.num_of_bots)
         
-
+        
         ### Precalculate variables that will later be nidded
         # Calculate angles, offset 90 deg for odd numbered bots and constrain between - pi to pi
         normals = (X + self.heading_angle_offsets) * np.pi / 180
@@ -150,40 +153,42 @@ class AnalyticModel:
         # Calculate direction to next bot:
         theta = np.exp(1j * np.roll(normals, -1)) + np.exp(1j * normals)
         theta = np.angle(theta) - np.pi / 2
-        theta += (theta > np.pi) * (- 2 * np.pi) + (theta < - np.pi) * (2 * np.pi)
+        #theta += (theta > np.pi) * (- 2 * np.pi) + (theta < - np.pi) * (2 * np.pi)
+        
 
         # Method to calculate distance between bots
-        if self.estimator_model == 'rigid_joint':      # rigid_joint
-            #L = lmax * np.sqrt(2 + 2 * np.cos(diff + 2 * np.pi / self.num_of_bots))
-            #L = 2 * lmax * np.cos(.5 * (diff + 2 * np.pi / self.num_of_bots))
-            L = 2 * lmax * np.cos(.5 * diff)
+        if self.estimator_model == 'rigid_joint':
+            L = 2 * self.lmax * np.cos(.5 * diff)
         elif self.estimator_model == 'linear':         # ransac regressor
             L = (155.93 - 0.8547 * 180 / np.pi * np.abs(diff)) / 10.
         else:
             L = self.num_of_bots
 
+        Ct = np.cos(theta)#np.cos(theta)
+        St = np.sin(theta)#np.sin(theta)
         # Distance vector from one bot to the next
-        B = np.vstack((np.cos(theta), np.sin(theta)))
-
+        B = np.vstack((Ct, St))
+        
         # Apply best fit to the estimator model
         if best_fit:
-            C = np.cos(theta).reshape((-1, self.num_of_bots))
-            S = np.sin(theta).reshape((-1, self.num_of_bots))
+            C = Ct.reshape((-1, self.num_of_bots))
+            S = St.reshape((-1, self.num_of_bots))
 
             # Calculate the inverse of the covariances
             COVi = np.eye(self.num_of_bots)
 
             # Values to be used in operation
-            CCT = (C @ COVi @ C.T)[0, 0]
-            SST = (S @ COVi @ S.T)[0, 0]
-            SCT = (S @ COVi @ C.T)[0, 0]
-            CST = (C @ COVi @ S.T)[0, 0]
+            CCT = np.sum(C**2)#(C @ COVi @ C.T)[0, 0]
+            SST = np.sum(S**2)#(S @ COVi @ S.T)[0, 0]
+            SCT = np.sum(C*S)#(S @ COVi @ C.T)[0, 0]
+            CST = SCT#(C @ COVi @ S.T)[0, 0]
 
             P = (SCT / CCT * C - S) / (SCT * CST / CCT - SST)
             Q = (C - CST * P) / CCT
 
             # Apply adjustment
-            x = - COVi @ (C.T @ Q @ L + S.T @ P @ L)
+            #x = - COVi @ (C.T @ Q @ L + S.T @ P @ L)
+            x = - ((C.T @ Q + S.T @ P) @ L)
             L += x
             
         
@@ -192,8 +197,9 @@ class AnalyticModel:
 
         # calculate the positions of each bot
         rel_positions = np.vstack((np.zeros((1, 2)), np.cumsum(B, axis=0)[:-1, :]))
-
         
+        t1 = time()
+        rospy.logerr("Calculation time: %s", str(t1 - t0))
         
         return rel_positions
 
@@ -249,7 +255,7 @@ if __name__ == '__main__':
     # rospy.Subscriber("odometry/filtered_map",
     #                  Odometry,
     #                  broadcaster.base_link_odom)
-    rate = rospy.Rate(20.0)
+    rate = rospy.Rate(2.0)
     while not rospy.is_shutdown():
         #rospy.logerr("Analyt_model, Number of bots: %s", str(broadcaster.num_of_bots))
         try:
