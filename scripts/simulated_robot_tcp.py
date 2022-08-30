@@ -15,8 +15,9 @@ import numpy as np
 
 # Get initial arguments, this should include csv file location to run from simulated data
 # number of tags, number of robots + 1
-num_bots = int(sys.argv[1])
-csv_filename = sys.argv[2]
+num_tags = int(sys.argv[1])
+num_bots = int(sys.argv[2])
+csv_filename = sys.argv[3]
 
 # Load data
 
@@ -31,7 +32,7 @@ def num_2_str(num):
 
 # Define dummy data for case where csv is not used
 ang_2_q = lambda alf: R.from_euler('z', -alf, degrees=False).as_quat()
-default_dict = lambda n: {"acc": [0., 0., -1.], "rot": ang_2_q((2 * pi * n / num_bots) + pi / 2 * (n%2)), "dist": 300 + (random()*100 - 50)}
+default_dict = lambda n: {"acc": [0., 0., -1.], "rot": ang_2_q((2 * pi * n / (num_tags - 1)) + pi / 2 * (n%2)), "dist": 300 + (random()*100 - 50)}
 
 # Returns the positions, angles and ranges at a given time for all bots
 def getTime_data(time, num_bots, data):
@@ -55,11 +56,11 @@ def getTime_data(time, num_bots, data):
 # Initialize node
 rospy.init_node('tcp_connection', anonymous=True)
 
-# Define publishers: (num_bots + 1) * 3
+# Define publishers: num_tags * 3
 range_pubs = []
 imu_pubs = []
 data_pubs = []
-for i in range(num_bots + 1):
+for i in range(num_tags):
 
     range_pub = rospy.Publisher("bot%s/dist/data" % num_2_str(i), Range, queue_size=1)
     imu_pub = rospy.Publisher("bot%s/imu/data" % num_2_str(i), Imu, queue_size=1)
@@ -69,7 +70,7 @@ for i in range(num_bots + 1):
     imu_pubs.append(imu_pub)
     data_pubs.append(data_pub)
 
-loc_publisher = rospy.Publisher("locomotion_stats", String, queue_size=1)
+loc_publisher = rospy.Publisher("locomotion_stats", String, queue_size=10)
 
 
 # Function to publish locomotion from desired direction data:
@@ -119,12 +120,15 @@ def callback(msg):
     data_dict = eval(msg.data)
     #motion_cmd = str(data_dict[dev_id_str][1]) + "_" + str(data_dict[dev_id_str][0])
 
-# def callbackTime(msg):
-#     global glob_time
-#     tmp = ast.literal_eval(msg.data)
-#     glob_time = tmp["time"]
+def callbackTime(msg):
+    global glob_time
+    tmp = ast.literal_eval(msg.data)
+    glob_time = tmp["time"]
 
 rospy.Subscriber("control_cmd", String, callback)
+
+# Callback to send range data
+rospy.Subscriber("state", String, callbackTime)
 
 # Define control algorithm:
 # Possible target direction
@@ -168,37 +172,34 @@ def getNextControl(angles, ranges):
             current_spin *= -1
 
 
-# CHeck if the apriltag/ground truth node has started sending data and syncronize with it
-while not rospy.has_param('sync_time'):
-    pass
-
-glob_time = rospy.get_param('sync_time')
-
 # Define rate at which to run simulation
 seq = 0
-rate = rospy.Rate(20)
+rate = rospy.Rate(10)
 now = -1.
 while not rospy.is_shutdown() and now < max_time:
     # increment sequence time
     seq += 1
 
-    now = rospy.Time.now().to_sec() - glob_time
-    
-    positions, angles, ranges = getTime_data(now, num_bots, csv_data)
-    #ranges = np.flip(ranges)
-    
-    getNextControl(angles, ranges)
+    if glob_time >= 0.:
 
-    publish_locomotion(quads[current_quad])
-
-    # for each tag generate data and publish
-    for i, (imu_p, range_p, imu_d, range_d) in enumerate(zip(imu_pubs, range_pubs, angles, ranges)):
+        now = rospy.get_rostime()
+        now = now.secs + now.nsecs * 1e-9 - glob_time
         
-        data_dict = {"acc": [0., 0., -1.], "rot": ang_2_q((imu_d + pi / 2 * (i%2))), "dist": range_d * 1000}
+        positions, angles, ranges = getTime_data(now, num_bots, csv_data)
+        #ranges = np.flip(ranges)
         
-        dev_id_str = num_2_str(i)
+        getNextControl(angles, ranges)
 
-        # Publish data for tag
-        publish_imu(imu_p, dev_id_str, data_dict, seq)
-        publish_range(range_p, dev_id_str, data_dict, seq)
+        publish_locomotion(quads[current_quad])
+
+        # for each tag generate data and publish
+        for i, (imu_p, range_p, imu_d, range_d) in enumerate(zip(imu_pubs, range_pubs, angles, ranges)):
+            
+            data_dict = {"acc": [0., 0., -1.], "rot": ang_2_q((imu_d + pi / 2 * (i%2))), "dist": range_d * 1000}
+            
+            dev_id_str = num_2_str(i)
+
+            # Publish data for tag
+            publish_imu(imu_p, dev_id_str, data_dict, seq)
+            publish_range(range_p, dev_id_str, data_dict, seq)
     rate.sleep()

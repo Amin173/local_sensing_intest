@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from doctest import FAIL_FAST
 import rospy
 import tf_conversions
 # from tensorflow.keras.models import load_model
@@ -15,39 +14,26 @@ from std_msgs.msg import String
 import numpy as np
 
 class AnalyticModel:
-
-    apply_corrections = False
-    angle_corrections_exp = np.array([-0.22507572-0.97381017j, 0.07613553+0.9936426j, 0.67415463-0.7363126j,
-                                      -0.28963543-0.95317596j, 0.77702618+0.62847827j, 0.44301792-0.89335851j,
-                                      0.67993069+0.73122556j, 0.92125238+0.37993544j, 0.29976383+0.95182792j,
-                                      -0.23359159+0.96941452j, 0.92080893-0.38381666j, 0.58281881-0.80787748j])
-
-    def __init__(self, frame_id, num_of_bots, estimator_model='linear', apply_corrections=False):
-        self.apply_corrections = apply_corrections
+    def __init__(self, frame_id, num_of_bots, origin_tag_id, estimator_model='linear'):
         self.num_of_bots = int(num_of_bots)
         self.listener = tf.TransformListener()
-        self.origin_tag = num_of_bots
-
-        # define initial position and orientation
-        self.base_link_pose_x = float(rospy.get_param('initial_pose/x'))
-        self.base_link_pose_y = float(rospy.get_param('initial_pose/y'))
-        self.base_link_orientation = float(rospy.get_param('initial_pose/a'))
-        
+        self.origin_tag = origin_tag_id
+        x0 = float(rospy.get_param('initial_pose/x'))
+        y0 = float(rospy.get_param('initial_pose/y'))
+        th0 = float(rospy.get_param('initial_pose/a'))
+        self.base_link_pose_x = x0
+        self.base_link_pose_y = y0
+        self.base_link_orientation = th0
+        self.rel_rotation_set = [False] * self.num_of_bots
+        self.cam_trnsfrm_recieved = False
         self.heading_angles = np.array([])
         self.br = tf2_ros.TransformBroadcaster()
         self.t = TransformStamped()
         self.t.header.frame_id = frame_id
-
         self.imu_quaternions = np.zeros((self.num_of_bots, 4))
         self.imu_quaternion_offsets = np.zeros((self.num_of_bots, 4))
-
-        self.heading_angles_rel = np.linspace(0, np.pi * 2, self.num_of_bots)#np.zeros(self.num_of_bots)
-        self.heading_angle_offsets = np.pi / 2 * (np.arange(self.num_of_bots) % 2)
-
-        self.initial_apriltag_data = False
-        self.initial_imu_sample = [False] * self.num_of_bots
-        self.heading_offset_apriltags = np.zeros(self.num_of_bots)
-
+        self.heading_angles_rel = np.zeros(self.num_of_bots)
+        self.heading_angle_offsets = 90 * (np.arange(self.num_of_bots) % 2)
         self.x_rel = np.zeros(self.num_of_bots)
         self.y_rel = np.zeros(self.num_of_bots)
         self.pose_offset_pub = rospy.Publisher("bot00_pose_offset", Pose, queue_size=50)
@@ -58,92 +44,87 @@ class AnalyticModel:
         else:
             self.estimator_model = estimator_model
 
-
-        for i in range(self.num_of_bots + 1):
-            rospy.Subscriber('bot%s/imu/data' % bot_id(i), Imu, self.update_imu_quaternions)
-
-        rospy.Subscriber("state", String, self.update_aprilt_state_values)
-
-    def transform_broadcaster(self, bot_num):
-        self.t.child_frame_id = "bot" + bot_num + "_analyt"
-        bot_number = int(bot_num)
+    def transform_broadcaster(self, bot_id):
+        self.t.child_frame_id = "bot" + bot_id + "_analyt"
+        bot_number = int(bot_id)
         self.t.header.stamp = rospy.Time.now()
         self.t.transform.translation.x = self.x_rel[bot_number] + self.base_link_pose_x
         self.t.transform.translation.y = self.y_rel[bot_number] + self.base_link_pose_y
         q = tf_conversions.transformations.quaternion_from_euler(0, 0, (
                 -self.heading_angle_offsets[bot_number] - self.heading_angles_rel[
-            bot_number]))
+            bot_number]) * np.pi / 180)
         self.t.transform.rotation.x = q[0]
         self.t.transform.rotation.y = q[1]
         self.t.transform.rotation.z = q[2]
         self.t.transform.rotation.w = q[3]
+        # self.t.transform.rotation.x = self.imu_quaternions[bot_id, 0]
+        # self.t.transform.rotation.y = self.imu_quaternions[bot_id, 1]
+        # self.t.transform.rotation.z = self.imu_quaternions[bot_id, 2]
+        # self.t.transform.rotation.w = self.imu_quaternions[bot_id, 3]
+        self.br.sendTransform(self.t)
 
+        self.t.child_frame_id = "bot" + bot_id
+        bot_number = int(bot_id)
+        #self.t.header.stamp = rospy.Time.now()
+        
+        self.t.transform.translation.x = self.data[bot_id][0] - self.data['00'][0] + self.base_link_pose_x
+        self.t.transform.translation.y = self.data[bot_id][1] - self.data['00'][1] + self.base_link_pose_y
+        q = tf_conversions.transformations.quaternion_from_euler(0, 0, -self.data[bot_id][2] * np.pi / 180 - np.pi / 2 * (bot_number%2))
+        self.t.transform.rotation.x = q[0]
+        self.t.transform.rotation.y = q[1]
+        self.t.transform.rotation.z = q[2]
+        self.t.transform.rotation.w = q[3]
+        # self.t.transform.rotation.x = self.imu_quaternions[bot_id, 0]
+        # self.t.transform.rotation.y = self.imu_quaternions[bot_id, 1]
+        # self.t.transform.rotation.z = self.imu_quaternions[bot_id, 2]
+        # self.t.transform.rotation.w = self.imu_quaternions[bot_id, 3]
         self.br.sendTransform(self.t)
 
 
-    # Callback for imu data and publish tf
+
+
+    def base_link_pose(self, msg):
+        data_dict = eval(msg.data)
+        self.base_link_pose_x = (data_dict['00'][0] - data_dict[self.origin_tag][0]) / 100
+        self.base_link_pose_y = -(data_dict['00'][1] - data_dict[self.origin_tag][1]) / 100
+        self.base_link_orientation = -(data_dict['00'][2] - data_dict[self.origin_tag][2]) * 3.14 / 180
+
+    def base_link_robot_loc(self, msg):
+        self.base_link_pose_x = msg.transform.rotation.x
+        self.base_link_pose_y = msg.transform.rotation.y
+        e = tf_conversions.transformations.euler_from_quaternion_from(msg.transform.rotation.x,
+                                                                      msg.transform.rotation.y,
+                                                                      msg.transform.rotation.z,
+                                                                      msg.transform.rotation.w)
+        self.base_link_orientation = e[2]
+
+    def base_link_odom(self, msg):
+        quaternion = (msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z,
+                      msg.pose.pose.orientation.w)
+        euler = tf.transformations.euler_from_quaternion(quaternion)
+        yaw = euler[2]
+        self.base_link_pose_x = msg.pose.pose.position.x
+        self.base_link_pose_y = msg.pose.pose.position.y
+        self.base_link_orientation = yaw
+        # self.base_link_pose_x += msg.twist.twist.linear.x/1000
+        # self.base_link_pose_y += -msg.twist.twist.linear.y/1000
+        # self.base_link_orientation += msg.twist.twist.angular.z/10
+
     def update_imu_quaternions(self, msg):
-
-        # Get info
-        bot_num = msg.header.frame_id
-        bot_number = int(bot_num[3:])
-
-        # Convert quaternion to euler angle
-        quat_list = [msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w]
-        euler = euler_from_quaternion(quat_list)[-1]
-
-        # Apply correction for experimental data
-        if self.apply_corrections:
-            self.heading_angles_rel[bot_number] = np.angle(np.exp(1j*euler) * self.angle_corrections_exp[bot_number])
-        else:
-            self.heading_angles_rel[bot_number] = euler
-
-        
-
-    # callback for apriltags
-    def update_aprilt_state_values(self, data):
-        data_dict = eval(data.data)
-        #self.base_link_pose_x = (data_dict['00'][0] - data_dict[self.origin_tag][0]) / 100
-        #self.base_link_pose_y = -(data_dict['00'][1] - data_dict[self.origin_tag][1]) / 100
-        #self.base_link_orientation = -(data_dict['00'][2] - data_dict[self.origin_tag][2]) * 3.14 / 180
-        self.data = data_dict
-        #for i in range(self.num_of_bots):
-        #    # self.heading_angles_rel[i] = (data_dict[self.key(i)][2] - data_dict['00'][2])
-        #    self.heading_angles_rel[i] = (data_dict[self.key(i)][2])
-        #analyt_input = np.array(self.heading_angles_rel).reshape((1, self.num_of_bots))
-        #rel_poses = self.analyt_model(analyt_input)
-        #self.x_rel = rel_poses[:, 0] / 100
-        #self.y_rel = - rel_poses[:, 1] / 100
-        #for i in range(1, self.num_of_bots):
-        #    self.transform_broadcaster(self.key(i))
-        #pose_offset = Pose()
-        #pose_offset.position.x = np.mean(self.x_rel) - self.x_rel[0]
-        #pose_offset.position.y = np.mean(self.y_rel) - self.y_rel[0]
-        #pose_offset.position.z = -(data_dict['00'][2] - data_dict[self.origin_tag][2])
-        #self.pose_offset_pub.publish(pose_offset)
-
-        # Publish transforms
-        analyt_input = np.array(self.heading_angles_rel).reshape((1, self.num_of_bots))
-        try:
-            rel_poses = self.analyt_model(analyt_input)
-            self.x_rel = rel_poses[:, 0] #/ 100
-            self.y_rel = - rel_poses[:, 1] #/ 100
-
-            for i in range(self.num_of_bots):
-                self.transform_broadcaster(self.key(i))
-
-            pose_offset = Pose()
-            pose_offset.position.x = np.mean(self.x_rel) - self.x_rel[0]
-            pose_offset.position.y = np.mean(self.y_rel) - self.y_rel[0]
-            pose_offset.position.z = -self.heading_angles_rel[0]
-            self.pose_offset_pub.publish(pose_offset)
-        except:
-            rospy.logerr("Error generating geometry")
+        bot_id = msg.header.frame_id
+        bot_number = int(bot_id[3:])
+        if (not self.rel_rotation_set[bot_number]) and self.cam_trnsfrm_recieved:
+            q = tf_conversions.transformations.quaternion_from_euler(0, 0, -self.heading_angles_rel[
+                bot_number] * np.pi / 180 + self.base_link_orientation)
+            q1_inv = [msg.orientation.x, msg.orientation.y, msg.orientation.z, - msg.orientation.w]
+            q2 = [q[0], q[1], q[2], q[3]]
+            self.imu_quaternion_offsets[bot_number, :] = tf.transformations.quaternion_multiply(q2, q1_inv)
+            self.rel_rotation_set[bot_number] = True
+        self.imu_quaternions[bot_id, :] = tf.transformations.quaternion_multiply(self.qr,
+                                                                                 [msg.orientation.x, msg.orientation.y,
+                                                                                  msg.orientation.z, msg.orientation.w])
 
     def analyt_model(self, X, best_fit=True):
-        
-        
-
         # Vector for distances between subunits
         L = []
 
@@ -151,17 +132,15 @@ class AnalyticModel:
         theta = []
 
         # Max distance between bots
-        lmax = .15/2 * np.tan(np.pi / self.num_of_bots) / np.sin(np.pi / 12) #150/20#20 
+        lmax = .15/2 * np.tan(np.pi / self.num_of_bots) / np.sin(np.pi / 12) * 100 #150/20#20 
 
         # Bot normal direction angles
         X = X.reshape(self.num_of_bots)
 
         ### Precalculate variables that will later be nidded
         # Calculate angles, offset 90 deg for odd numbered bots and constrain between - pi to pi
-        normals = (X + self.heading_angle_offsets)
+        normals = (X + self.heading_angle_offsets) * np.pi / 180
         normals += (normals > np.pi) * (- 2 * np.pi) + (normals < - np.pi) * (2 * np.pi)
-
-        rospy.logerr(str(normals))
 
         # Calculate difference in angle, constrain between - pi to pi
         diff = np.roll(normals, -1) - normals
@@ -178,7 +157,7 @@ class AnalyticModel:
             #L = 2 * lmax * np.cos(.5 * (diff + 2 * np.pi / self.num_of_bots))
             L = 2 * lmax * np.cos(.5 * diff)
         elif self.estimator_model == 'linear':         # ransac regressor
-            L = (155.93 - 0.8547 * 180 / np.pi * np.abs(diff)) / 1000.
+            L = (155.93 - 0.8547 * 180 / np.pi * np.abs(diff)) / 10.
         else:
             L = self.num_of_bots
 
@@ -217,6 +196,27 @@ class AnalyticModel:
         
         return rel_positions
 
+    def update_aprilt_state_values(self, data):
+        data_dict = eval(data.data)
+        # self.base_link_pose_x = (data_dict['00'][0] - data_dict[self.origin_tag][0]) / 100
+        # self.base_link_pose_y = -(data_dict['00'][1] - data_dict[self.origin_tag][1]) / 100
+        # self.base_link_orientation = -(data_dict['00'][2] - data_dict[self.origin_tag][2]) * 3.14 / 180
+        self.data = data_dict
+        for i in range(self.num_of_bots):
+            # self.heading_angles_rel[i] = (data_dict[self.key(i)][2] - data_dict['00'][2])
+            self.heading_angles_rel[i] = (data_dict[self.key(i)][2])
+        analyt_input = np.array(self.heading_angles_rel).reshape((1, self.num_of_bots))
+        rel_poses = self.analyt_model(analyt_input)
+        self.x_rel = rel_poses[:, 0] / 100
+        self.y_rel = - rel_poses[:, 1] / 100
+        for i in range(1, self.num_of_bots):
+            self.transform_broadcaster(self.key(i))
+        pose_offset = Pose()
+        pose_offset.position.x = np.mean(self.x_rel) - self.x_rel[0]
+        pose_offset.position.y = np.mean(self.y_rel) - self.y_rel[0]
+        pose_offset.position.z = -(data_dict['00'][2] - data_dict[self.origin_tag][2])
+        self.pose_offset_pub.publish(pose_offset)
+
     def key(self, i):
         if i < 10:
             key = str(0) + str(i)
@@ -227,9 +227,9 @@ class AnalyticModel:
 
 def bot_id(i):
     if i < 10:
-        id1 =str(0) + str(i)
+        id1 = "bot" + str(0) + str(i)
     else:
-        id1 = str(i)
+        id1 = "bot" + str(i)
     return id1
 
 
@@ -238,19 +238,13 @@ if __name__ == '__main__':
     listener = tf.TransformListener()
     num_of_bots = sys.argv[1]
     frame_id = sys.argv[2]
+    origin_tag = sys.argv[3]
     estimator_model = sys.argv[4]
-    apply_angle_corrections = sys.argv[5] == 'true'
-
-    # num_of_bots = "12"
-    # frame_id = "odom"
-    # estimator_model = "linear"
-    # apply_angle_corrections = False
-
-
     # child_frames = rospy.get_param('~child_frames')
-    broadcaster = AnalyticModel(frame_id, num_of_bots, estimator_model, apply_angle_corrections)
-
-    
+    broadcaster = AnalyticModel(frame_id, num_of_bots, origin_tag, estimator_model)
+    # for i in child_frames:
+    #     rospy.Subscriber('%s/imu/data' % bot_id(i), Imu, broadcaster.update_imu_quaternions)
+    rospy.Subscriber("state", String, broadcaster.update_aprilt_state_values)
     # rospy.Subscriber("odometry/filtered_map",
     #                  Odometry,
     #                  broadcaster.base_link_odom)

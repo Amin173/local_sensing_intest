@@ -55,16 +55,15 @@ def getTime_data(time, num_bots, data):
     return positions, angles, ranges
 
 
-def main(num_bots, csv_filename):
+def main(num_of_tags, csv_filename):
     # Say if you want to lot the data after the test
     plot_data = False
     animate_data = True
     date = datetime.datetime.now()
 
     # Load csv file:
-    num_bots = int(num_bots)
+    num_bots = int(num_of_tags) - 1
     tmp_data = loadtxt('/opt/ros/overlay_ws/src/local_sensing_intest/simulated_csv/' + csv_filename, delimiter=',')
-
     max_time = tmp_data[-1, 0]
     
 
@@ -73,57 +72,65 @@ def main(num_bots, csv_filename):
 
     # Generate offset point
     
-    p0 = array([-3.2454133530086167, 2.8524046300249237, 0.])
+    p0 = array([0, 0, 0])#[-3.2454133530086167, 2.8524046300249237, 0.])
 
     # Define dummy data for case where csv is not used
     ang_2_q = lambda alf: R.from_euler('z', -alf, degrees=False).as_matrix()
     
     # Create all node data
-    for i in range(int(num_bots)):
+    for i in range(int(num_of_tags)):
         # Generate tag
         idx = str(i)
         if len(idx) == 1:
             idx = '0' + idx
         
         # Generate position
-        alf = 2 * pi * i / int(num_bots)
+        alf = 2 * pi * i / int(num_of_tags)
         p = 30. * array([cos(alf), sin(alf), 0.]) + p0
         
         # Generate angle:
-        ang = _rotation_matrix_to_euler_angles(ang_2_q((2 * pi * i / num_bots) + pi / 2 * (i%2)) )
+        ang = _rotation_matrix_to_euler_angles(ang_2_q((2 * pi * i / (int(num_of_tags) - 1)) + pi / 2 * (i%2)) )
         p[-1] = ang
+
+        if i == num_bots:
+            p = p0
 
         data[idx] = tuple(p)
 
-    idx = str(num_bots)
-    if len(idx) == 1:
-            idx = '0' + idx
-    data[idx] = tuple(p0)
+    data['time'] = -1
 
     # Setup ROS # state is a tuple of x, y, and angle
-    pub = rospy.Publisher('state', String, queue_size=1)
+    pub = rospy.Publisher('state', String, queue_size=10)
     rospy.init_node('AprilTags', anonymous=False)
 
 
-    rate = rospy.Rate(10) # in Hz
+    rate = rospy.Rate(5) # in Hz
 
-    t0 = rospy.Time.now().to_sec()
-    rospy.set_param('sync_time', t0)
+    tmp = rospy.get_rostime()
+    t0 = tmp.secs + tmp.nsecs * 1e-9
     while not rospy.is_shutdown():# and rospy.get_rostime().secs < max_time:
-        now = rospy.Time.now().to_sec()
-        now = now - t0
-
+        now = rospy.get_rostime()
+        now = now.secs + now.nsecs * 1e-9 - t0
         positions, angles, ranges = getTime_data(now, num_bots, tmp_data)
+        #angles = np.flip(angles)
         angles = - angles
+
+        data['time'] = t0#now
 
         # For each node update data
         for i, k in enumerate(list(data.keys())[:-2]):
             angle = (angles[i] - pi/2 * (i%2)) * 180 / pi
+            
             if angle > 180:
                 angle -= 360
             elif angle < -180:
                 angle += 360
+            
             data[k] = (positions[i, 0] - p0[0], positions[i, 1] - p0[1], angle)
+            
+            
+
+        
 
         # Publish result
         pub.publish(str(data))

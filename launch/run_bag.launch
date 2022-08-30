@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-
-<launch>
-    <!-- Rosbag play -->
-    <param name ="/use_sim_time" value="true"/>
-    <node pkg="rosbag" type="play" name="player" args="--clock $(env bag_file)"/>
-
-</launch>

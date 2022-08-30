@@ -9,17 +9,12 @@
 
     <arg name="min_datapoints" default="360"/>
 
-    <param name ="/use_sim_time" value="true"/>
-
     <rosparam command="load" file="$(find local_sensing_intest)/config/config.yml" />
-
-    <node name="set_initial_pose" pkg="local_sensing_intest" type="initial_pose_from_apriltags.py" args="$(arg num_of_tags)" respawn="false"/>
 
     <!--     Transorms -->
     <include file="$(find local_sensing_intest)/launch/transforms_replay.launch">
             <arg name="num_of_bots" value="$(arg num_of_bots)" />
             <arg name="fixed_frame_origin_tag" value="$(arg num_of_bots)" />
-            <arg name="apply_corrections" value="true"/>
     </include>
 
     <!-- Rosbag play -->
