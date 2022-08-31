@@ -189,7 +189,6 @@ class AnalyticModel:
 
         # calculate the positions of each bot
         rel_positions = np.vstack((np.zeros((1, 2)), np.cumsum(B, axis=0)[:-1, :]))
-        
         return rel_positions
 
     def update_aprilt_state_values(self, data):
@@ -244,7 +243,7 @@ if __name__ == '__main__':
     # rospy.Subscriber("odometry/filtered_map",
     #                  Odometry,
     #                  broadcaster.base_link_odom)
-    rate = rospy.Rate(2.0)
+    rate = rospy.Rate(4)
     while not rospy.is_shutdown():
         #rospy.logerr("Analyt_model, Number of bots: %s", str(broadcaster.num_of_bots))
         try:

@@ -43,7 +43,7 @@ class odomBroadcaster:
 
         self.last_time = rospy.Time.now()
         self.current_time = rospy.Time.now()
-        self.r = rospy.Rate(2)
+        self.r = rospy.Rate(4)
 
         # Publishers
         self.odom_pub = rospy.Publisher("odom/vel_model", Odometry, queue_size=50)
@@ -114,7 +114,7 @@ class odomBroadcaster:
     def update_des_dir(self, msg):
         data_dict = eval(msg.data)
         self.des_dir = data_dict['dir']
-        V = 0.7
+        V = 0.7 * .5
         self.vx = V * self.des_dir[0]
         self.vy = V * self.des_dir[1]
 

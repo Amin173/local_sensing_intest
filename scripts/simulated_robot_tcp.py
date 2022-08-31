@@ -32,7 +32,7 @@ def num_2_str(num):
 
 # Define dummy data for case where csv is not used
 ang_2_q = lambda alf: R.from_euler('z', -alf, degrees=False).as_quat()
-default_dict = lambda n: {"acc": [0., 0., -1.], "rot": ang_2_q((2 * pi * n / (num_tags - 1)) + pi / 2 * (n%2)), "dist": 300 + (random()*100 - 50)}
+default_dict = lambda n: {"acc": [0., 0., -1.], "rot": ang_2_q((2 * pi * n / (num_tags - 1)) + pi / 2 * (n%2)), "dist": 300 + (random()*100 - 50), 'type': 1}
 
 # Returns the positions, angles and ranges at a given time for all bots
 def getTime_data(time, num_bots, data):
@@ -42,16 +42,17 @@ def getTime_data(time, num_bots, data):
     # calculate index for given time and timestep:
     idx = int(np.round(time / file_dt * .25, 0))
 
-    tmp = data[idx, 1:].reshape((num_bots, 7))
+    tmp = data[idx, 1:].reshape((num_bots, 8))
 
     positions = tmp[:, :2]
     velocities = tmp[:, 2:4]
     norms = tmp[:, 4:6]
     angles = np.arctan2(norms[:, 1], norms[:, 0])
     ranges = tmp[:, 6]
+    range_type = tmp[:, 7]
 
     # return needed data only
-    return positions, angles, ranges
+    return positions, angles, ranges, range_type
 
 # Initialize node
 rospy.init_node('tcp_connection', anonymous=True)
@@ -103,12 +104,14 @@ def publish_range(publisher, dev_id_str, range_measurement, seq):
     h.frame_id = 'bot' + dev_id_str
     h.seq = seq
     dist_msg.header = h
-    dist_msg.radiation_type = 1
+    dist_msg.radiation_type = 1 # int(range_measurement['type'])
     dist_msg.field_of_view = 0.2
     dist_msg.min_range = 0
     dist_msg.max_range = 4
     dist_msg.range = float(range_measurement['dist']) / 1000
-    publisher.publish(dist_msg)
+
+    if int(range_measurement['type']) == 1:
+        publisher.publish(dist_msg)
 
 
 # Code starts here:
@@ -138,11 +141,14 @@ current_quad = 9
 current_spin = 1
 distance_threshold = 0.05
 
-def calculateDistancesInDirections(normals, ranges):
+def calculateDistancesInDirections(normals, ranges, range_types):
     global quads
     global current_quad
-    cosines = np.dot(normals, quads.T)
-    proj_distances = np.multiply(ranges, cosines.T)
+
+    cosines = np.dot(normals[range_types == 1, :], quads.T)
+    proj_distances = np.multiply(ranges[range_types == 1], cosines.T)
+    #cosines = np.dot(normals, quads.T)
+    #proj_distances = np.multiply(ranges, cosines.T)
     average_distances = []
     for c, d in zip(cosines.T, proj_distances):
         av_dist = np.average(d[c > np.cos(np.pi / 4)])
@@ -154,7 +160,7 @@ def calculateDistancesInDirections(normals, ranges):
             average_distances[(current_quad + 1) % 12],
             average_distances[(current_quad + 2) % 12]]
 
-def getNextControl(angles, ranges):
+def getNextControl(angles, ranges, range_types):
     global quads
     global current_quad
     global current_spin
@@ -162,7 +168,7 @@ def getNextControl(angles, ranges):
 
     norm_bots = np.vstack((np.cos(angles), np.sin(angles))).T
 
-    av_distances = calculateDistancesInDirections(norm_bots, ranges)
+    av_distances = calculateDistancesInDirections(norm_bots, ranges, range_types)
     if av_distances[2] < distance_threshold:
         diff = np.argmax(av_distances) - 2
         current_quad += int(np.sign(diff))
@@ -174,7 +180,7 @@ def getNextControl(angles, ranges):
 
 # Define rate at which to run simulation
 seq = 0
-rate = rospy.Rate(2)
+rate = rospy.Rate(4)
 now = -1.
 while not rospy.is_shutdown() and now < max_time:
     # increment sequence time
@@ -185,17 +191,17 @@ while not rospy.is_shutdown() and now < max_time:
         now = rospy.get_rostime()
         now = now.secs + now.nsecs * 1e-9 - glob_time
         
-        positions, angles, ranges = getTime_data(now, num_bots, csv_data)
+        positions, angles, ranges, range_types = getTime_data(now, num_bots, csv_data)
         #ranges = np.flip(ranges)
         
-        getNextControl(angles, ranges)
+        getNextControl(angles, ranges, range_types)
 
         publish_locomotion(quads[current_quad])
 
         # for each tag generate data and publish
-        for i, (imu_p, range_p, imu_d, range_d) in enumerate(zip(imu_pubs, range_pubs, angles, ranges)):
+        for i, (imu_p, range_p, imu_d, range_d, type_d) in enumerate(zip(imu_pubs, range_pubs, angles, ranges, range_types)):
             
-            data_dict = {"acc": [0., 0., -1.], "rot": ang_2_q((imu_d + pi / 2 * (i%2))), "dist": range_d * 1000}
+            data_dict = {"acc": [0., 0., -1.], "rot": ang_2_q((imu_d + pi / 2 * (i%2))), "dist": range_d * 1000, "type": type_d}
             
             dev_id_str = num_2_str(i)
 

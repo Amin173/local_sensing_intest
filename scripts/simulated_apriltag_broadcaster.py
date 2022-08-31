@@ -43,16 +43,17 @@ def getTime_data(time, num_bots, data):
     # calculate index for given time and timestep:
     idx = int(np.round(time / file_dt * .25, 0))
 
-    tmp = data[idx, 1:].reshape((num_bots, 7))
+    tmp = data[idx, 1:].reshape((num_bots, 8))
 
     positions = tmp[:, :2]
     velocities = tmp[:, 2:4]
     norms = tmp[:, 4:6]
     angles = np.arctan2(norms[:, 1], norms[:, 0])
     ranges = tmp[:, 6]
+    range_type = tmp[:, 7]
 
     # return needed data only
-    return positions, angles, ranges
+    return positions, angles, ranges, range_type
 
 
 def main(num_of_tags, csv_filename):
@@ -104,14 +105,14 @@ def main(num_of_tags, csv_filename):
     rospy.init_node('AprilTags', anonymous=False)
 
 
-    rate = rospy.Rate(2) # in Hz
+    rate = rospy.Rate(4) # in Hz
 
     tmp = rospy.get_rostime()
     t0 = tmp.secs + tmp.nsecs * 1e-9
     while not rospy.is_shutdown():# and rospy.get_rostime().secs < max_time:
         now = rospy.get_rostime()
         now = now.secs + now.nsecs * 1e-9 - t0
-        positions, angles, ranges = getTime_data(now, num_bots, tmp_data)
+        positions, angles, ranges, range_types = getTime_data(now, num_bots, tmp_data)
         #angles = np.flip(angles)
         angles = - angles
 
