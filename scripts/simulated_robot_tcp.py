@@ -75,10 +75,10 @@ loc_publisher = rospy.Publisher("locomotion_stats", String, queue_size=10)
 
 
 # Function to publish locomotion from desired direction data:
-def publish_locomotion(direction):
+def publish_locomotion(direction, states):
     global loc_publisher
 
-    locomotion_stats = {"mode": 'move', "dir": direction}
+    locomotion_stats = {"mode": 'move', "dir": direction, "actions": states}
     loc_publisher.publish(str(locomotion_stats))
 
 # Function to publish imu data
@@ -118,17 +118,10 @@ def publish_range(publisher, dev_id_str, range_measurement, seq):
 # time to which send csv data
 glob_time = -1
 
-def callback(msg):
-    global motion_cmd
-    data_dict = eval(msg.data)
-    #motion_cmd = str(data_dict[dev_id_str][1]) + "_" + str(data_dict[dev_id_str][0])
-
 def callbackTime(msg):
     global glob_time
     tmp = ast.literal_eval(msg.data)
     glob_time = tmp["time"]
-
-rospy.Subscriber("control_cmd", String, callback)
 
 # Callback to send range data
 rospy.Subscriber("state", String, callbackTime)
@@ -165,6 +158,7 @@ def getNextControl(angles, ranges, range_types):
     global current_quad
     global current_spin
     global distance_threshold
+    global norm_bots
 
     norm_bots = np.vstack((np.cos(angles), np.sin(angles))).T
 
@@ -176,6 +170,16 @@ def getNextControl(angles, ranges, range_types):
 
         if diff * current_spin > 0:
             current_spin *= -1
+
+    ref = quads[current_quad, :]
+
+    # get desired velocities
+    tmp = np.dot(norm_bots, ref)
+    actions = np.sign(tmp) * 1
+    actions[ranges < distance_threshold * .5 / 1000.] = -1
+    actions[np.arange(0, num_bots, 2)] = current_spin * 1
+
+    return actions
 
 
 # Define rate at which to run simulation
@@ -194,9 +198,9 @@ while not rospy.is_shutdown() and now < max_time:
         positions, angles, ranges, range_types = getTime_data(now, num_bots, csv_data)
         #ranges = np.flip(ranges)
         
-        getNextControl(angles, ranges, range_types)
+        actions = getNextControl(angles, ranges, range_types)
 
-        publish_locomotion(quads[current_quad])
+        publish_locomotion(quads[current_quad], actions)
 
         # for each tag generate data and publish
         for i, (imu_p, range_p, imu_d, range_d, type_d) in enumerate(zip(imu_pubs, range_pubs, angles, ranges, range_types)):
