@@ -43,7 +43,7 @@ class odomBroadcaster:
 
         self.last_time = rospy.Time.now()
         self.current_time = rospy.Time.now()
-        self.r = rospy.Rate(4)
+        self.r = rospy.Rate(10)
 
         # Publishers
         self.odom_pub = rospy.Publisher("odom/vel_model", Odometry, queue_size=50)
@@ -114,7 +114,7 @@ class odomBroadcaster:
     def update_des_dir(self, msg):
         data_dict = eval(msg.data)
         self.des_dir = data_dict['dir']
-        V = 0.7 * .5
+        V = 0.7
         self.vx = V * self.des_dir[0]
         self.vy = V * self.des_dir[1]
 
@@ -212,7 +212,7 @@ class odomBroadcaster:
             # set the velocity
             odom.child_frame_id = "bot00_analyt"
             odom.twist.twist = Twist(
-                Vector3((self.vx + self.vx_or)/100, -(self.vy - self.vy_or)/100, 0),
+                Vector3(delta_x / dt, delta_y / dt, 0),
                 Vector3(0, 0, self.vth))
             odom.twist.covariance = twist_covariance
 

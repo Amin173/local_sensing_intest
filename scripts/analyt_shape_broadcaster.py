@@ -243,7 +243,7 @@ if __name__ == '__main__':
     # rospy.Subscriber("odometry/filtered_map",
     #                  Odometry,
     #                  broadcaster.base_link_odom)
-    rate = rospy.Rate(4)
+    rate = rospy.Rate(10)
     while not rospy.is_shutdown():
         #rospy.logerr("Analyt_model, Number of bots: %s", str(broadcaster.num_of_bots))
         try:
