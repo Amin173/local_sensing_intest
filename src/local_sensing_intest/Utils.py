@@ -709,24 +709,16 @@ class UtilFunctions:
         self.range_data[bot_number] = msg.range
     
     def update_imu_quaternions(self, msg):
-        bot_id = msg.header.frame_id
-        bot_number = int(bot_id[3:])
-        if (not self.rel_rotation_set[bot_number]) and self.cam_trnsfrm_recieved:
-            q = tf_conversions.transformations.quaternion_from_euler(0, 0, -self.heading_angles_rel[
-                bot_number] * np.pi / 180 + self.base_link_orientation)
-            q1_inv = [msg.orientation.x, msg.orientation.y, msg.orientation.z, - msg.orientation.w]
-            q2 = [q[0], q[1], q[2], q[3]]
-            self.imu_quaternion_offsets[bot_number, :] = tf.transformations.quaternion_multiply(q2, q1_inv)
-            self.rel_rotation_set[bot_number] = True
-        self.imu_quaternions[bot_id, :] = tf.transformations.quaternion_multiply(self.qr,
-                                                                                 [msg.orientation.x, msg.orientation.y,
-                                                                                  msg.orientation.z, msg.orientation.w])
-        e = tf_conversions.transformations.euler_from_quaternion_from(self.imu_quaternions[bot_id, 0],
-                                                                      self.imu_quaternions[bot_id, 1],
-                                                                      self.imu_quaternions[bot_id, 2],
-                                                                      self.imu_quaternions[bot_id, 3])
+        self.all_imus_initiated = True
+        dict = eval(msg.data)
+        for i in range(self.num_of_bots):
+            self.imu_quaternions[i, :] = dict[self.key(i)]
+            e = tf_conversions.transformations.euler_from_quaternion_from(self.imu_quaternions[i, 0],
+                                                                        self.imu_quaternions[i, 1],
+                                                                        self.imu_quaternions[i, 2],
+                                                                        self.imu_quaternions[i, 3])
 
-        self.heading[bot_id] = e[2]
+            self.heading[i] = e[2]
 
     def test(self, test="vac"):
         """ Method to test different part of the vacuum robot """

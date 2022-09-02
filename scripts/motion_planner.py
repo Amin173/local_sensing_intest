@@ -25,6 +25,7 @@ def key(i):
 
 def listner():
     rospy.Subscriber("state", String, rob.state_callback)
+    rospy.Subscriber("imu_quaternions", String, rob.update_imu_quaternions)
     for i in range(num_of_bots):
         rospy.Subscriber("bot%s/dist/data" % key(i), Range, rob.update_range_sensors)
     rospy.spin()

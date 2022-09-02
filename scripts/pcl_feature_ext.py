@@ -547,7 +547,7 @@ class Cloud:
 
     def voxelize(self, points):
         sampled_points = []
-        voxel_size = 0.03
+        voxel_size = 0.06
         x_max, y_max, _ = np.max(points, axis=0)
         x_min, y_min, _ = np.min(points, axis=0)
         n_x = int((x_max-x_min)/voxel_size)

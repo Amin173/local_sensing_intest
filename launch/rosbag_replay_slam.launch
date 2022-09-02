@@ -3,7 +3,9 @@
 <launch>
 
     <arg name="num_of_bots" default="12"/>
-
+    <arg name="fixed_frame" default="odom" />
+    <arg name="fixed_frame_origin_tag" default="12" />
+    
     <rosparam command="load" file="$(find local_sensing_intest)/config/config.yml" />
 
     <!--     Transorms -->
@@ -37,8 +39,8 @@
     <node name="odometry" pkg="local_sensing_intest" type="odometry.py" respawn="true" output="screen"/>
 
     <!--    IMU frame converter-->
-    <node name="imu_frame_conversion" pkg="local_sensing_intest" type="imu_frame_conversion.py" respawn="true" args="12"
-          output="screen"/>
+    <node name="imu_frame_conversion" pkg="local_sensing_intest" type="imu_frame_conversion.py" respawn="true" args="$(arg num_of_bots) 
+      $(arg fixed_frame) $(arg fixed_frame_origin_tag)" output="screen"/>
 
     <!--    Rviz-->
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find local_sensing_intest)/rviz/config_file.rviz"

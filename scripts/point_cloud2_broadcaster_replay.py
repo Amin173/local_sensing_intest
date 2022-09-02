@@ -16,7 +16,7 @@ class Cloud:
         self.ps = PointStamped()
         self.ps_transformed = PointStamped()
         self.cloud = PointCloud2()
-        self.stacking_factor = 30
+        self.stacking_factor = 60 
         self.stacking_iter = 0
         self.num_points = num_points
         self.points = []
