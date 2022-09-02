@@ -53,7 +53,8 @@
     
 
       <!-- Odometry -->
-    <node name="odometry" pkg="local_sensing_intest" type="odometry.py" respawn="true" output="screen"/>
+    <!-- <node name="odometry" pkg="local_sensing_intest" type="odometry.py" respawn="true" output="screen"/> -->
+    <node name="odometry" pkg="local_sensing_intest" type="odometry2.py" args="$(arg num_of_bots) linear experimental" respawn="true" output="screen"/>
 
     <!--    IMU frame converter-->
     <node name="imu_frame_conversion" pkg="local_sensing_intest" type="imu_frame_conversion.py" respawn="true" args="12"

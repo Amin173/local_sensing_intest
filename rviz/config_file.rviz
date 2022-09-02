@@ -59,201 +59,61 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        bot00:
+          Value: true
         bot00_analyt:
+          Value: true
+        bot01:
           Value: true
         bot01_analyt:
           Value: true
+        bot02:
+          Value: true
         bot02_analyt:
+          Value: true
+        bot03:
           Value: true
         bot03_analyt:
           Value: true
+        bot04:
+          Value: true
         bot04_analyt:
+          Value: true
+        bot05:
           Value: true
         bot05_analyt:
           Value: true
+        bot06:
+          Value: true
         bot06_analyt:
+          Value: true
+        bot07:
           Value: true
         bot07_analyt:
           Value: true
+        bot08:
+          Value: true
         bot08_analyt:
+          Value: true
+        bot09:
           Value: true
         bot09_analyt:
           Value: true
+        bot10:
+          Value: true
         bot10_analyt:
+          Value: true
+        bot11:
           Value: true
         bot11_analyt:
           Value: true
-        bot12_analyt:
-          Value: true
-        bot13_analyt:
-          Value: true
-        bot14_analyt:
-          Value: true
-        bot15_analyt:
-          Value: true
-        bot16_analyt:
-          Value: true
-        bot17_analyt:
-          Value: true
-        bot18_analyt:
-          Value: true
-        bot19_analyt:
-          Value: true
-        bot20_analyt:
-          Value: true
-        bot21_analyt:
-          Value: true
-        bot22_analyt:
-          Value: true
-        bot23_analyt:
-          Value: true
-        bot24_analyt:
-          Value: true
-        bot25_analyt:
-          Value: true
-        bot26_analyt:
-          Value: true
-        bot27_analyt:
-          Value: true
-        bot28_analyt:
-          Value: true
-        bot29_analyt:
-          Value: true
-        bot30_analyt:
-          Value: true
-        bot31_analyt:
-          Value: true
-        bot32_analyt:
-          Value: true
-        bot33_analyt:
-          Value: true
-        bot34_analyt:
-          Value: true
-        bot35_analyt:
-          Value: true
-        bot36_analyt:
-          Value: true
-        bot37_analyt:
-          Value: true
-        bot38_analyt:
-          Value: true
-        bot39_analyt:
-          Value: true
-        bot40_analyt:
-          Value: true
-        bot41_analyt:
-          Value: true
-        bot42_analyt:
-          Value: true
-        bot43_analyt:
-          Value: true
-        bot44_analyt:
-          Value: true
-        bot45_analyt:
-          Value: true
-        bot46_analyt:
-          Value: true
-        bot47_analyt:
-          Value: true
-        bot48_analyt:
-          Value: true
-        bot49_analyt:
-          Value: true
-        bot50_analyt:
-          Value: true
-        bot51_analyt:
-          Value: true
-        bot52_analyt:
-          Value: true
-        bot53_analyt:
-          Value: true
-        bot54_analyt:
-          Value: true
-        bot55_analyt:
-          Value: true
-        bot56_analyt:
-          Value: true
-        bot57_analyt:
-          Value: true
-        bot58_analyt:
-          Value: true
-        bot59_analyt:
-          Value: true
-        bot60_analyt:
-          Value: true
-        bot61_analyt:
-          Value: true
-        bot62_analyt:
-          Value: true
-        bot63_analyt:
-          Value: true
-        bot64_analyt:
-          Value: true
-        bot65_analyt:
-          Value: true
-        bot66_analyt:
-          Value: true
-        bot67_analyt:
-          Value: true
-        bot68_analyt:
-          Value: true
-        bot69_analyt:
-          Value: true
-        bot70_analyt:
-          Value: true
-        bot71_analyt:
-          Value: true
-        bot72_analyt:
-          Value: true
-        bot73_analyt:
-          Value: true
-        bot74_analyt:
-          Value: true
-        bot75_analyt:
-          Value: true
-        bot76_analyt:
-          Value: true
-        bot77_analyt:
-          Value: true
-        bot78_analyt:
-          Value: true
-        bot79_analyt:
-          Value: true
-        bot80_analyt:
-          Value: true
-        bot81_analyt:
-          Value: true
-        bot82_analyt:
-          Value: true
-        bot83_analyt:
-          Value: true
-        bot84_analyt:
-          Value: true
-        bot85_analyt:
-          Value: true
-        bot86_analyt:
-          Value: true
-        bot87_analyt:
-          Value: true
-        bot88_analyt:
-          Value: true
-        bot89_analyt:
-          Value: true
-        bot90_analyt:
-          Value: true
-        bot91_analyt:
-          Value: true
-        bot92_analyt:
-          Value: true
-        bot93_analyt:
-          Value: true
-        bot94_analyt:
-          Value: true
-        bot95_analyt:
+        bot_center:
           Value: true
         map:
           Value: true
         odom:
+          Value: true
+        odom2:
           Value: true
         world:
           Value: true
@@ -267,198 +127,33 @@ Visualization Manager:
         world:
           map:
             odom:
-              bot00_analyt:
-                {}
-              bot01_analyt:
-                {}
-              bot02_analyt:
-                {}
-              bot03_analyt:
-                {}
-              bot04_analyt:
-                {}
-              bot05_analyt:
-                {}
-              bot06_analyt:
-                {}
-              bot07_analyt:
-                {}
-              bot08_analyt:
-                {}
-              bot09_analyt:
-                {}
-              bot10_analyt:
-                {}
-              bot11_analyt:
-                {}
-              bot12_analyt:
-                {}
-              bot13_analyt:
-                {}
-              bot14_analyt:
-                {}
-              bot15_analyt:
-                {}
-              bot16_analyt:
-                {}
-              bot17_analyt:
-                {}
-              bot18_analyt:
-                {}
-              bot19_analyt:
-                {}
-              bot20_analyt:
-                {}
-              bot21_analyt:
-                {}
-              bot22_analyt:
-                {}
-              bot23_analyt:
-                {}
-              bot24_analyt:
-                {}
-              bot25_analyt:
-                {}
-              bot26_analyt:
-                {}
-              bot27_analyt:
-                {}
-              bot28_analyt:
-                {}
-              bot29_analyt:
-                {}
-              bot30_analyt:
-                {}
-              bot31_analyt:
-                {}
-              bot32_analyt:
-                {}
-              bot33_analyt:
-                {}
-              bot34_analyt:
-                {}
-              bot35_analyt:
-                {}
-              bot36_analyt:
-                {}
-              bot37_analyt:
-                {}
-              bot38_analyt:
-                {}
-              bot39_analyt:
-                {}
-              bot40_analyt:
-                {}
-              bot41_analyt:
-                {}
-              bot42_analyt:
-                {}
-              bot43_analyt:
-                {}
-              bot44_analyt:
-                {}
-              bot45_analyt:
-                {}
-              bot46_analyt:
-                {}
-              bot47_analyt:
-                {}
-              bot48_analyt:
-                {}
-              bot49_analyt:
-                {}
-              bot50_analyt:
-                {}
-              bot51_analyt:
-                {}
-              bot52_analyt:
-                {}
-              bot53_analyt:
-                {}
-              bot54_analyt:
-                {}
-              bot55_analyt:
-                {}
-              bot56_analyt:
-                {}
-              bot57_analyt:
-                {}
-              bot58_analyt:
-                {}
-              bot59_analyt:
-                {}
-              bot60_analyt:
-                {}
-              bot61_analyt:
-                {}
-              bot62_analyt:
-                {}
-              bot63_analyt:
-                {}
-              bot64_analyt:
-                {}
-              bot65_analyt:
-                {}
-              bot66_analyt:
-                {}
-              bot67_analyt:
-                {}
-              bot68_analyt:
-                {}
-              bot69_analyt:
-                {}
-              bot70_analyt:
-                {}
-              bot71_analyt:
-                {}
-              bot72_analyt:
-                {}
-              bot73_analyt:
-                {}
-              bot74_analyt:
-                {}
-              bot75_analyt:
-                {}
-              bot76_analyt:
-                {}
-              bot77_analyt:
-                {}
-              bot78_analyt:
-                {}
-              bot79_analyt:
-                {}
-              bot80_analyt:
-                {}
-              bot81_analyt:
-                {}
-              bot82_analyt:
-                {}
-              bot83_analyt:
-                {}
-              bot84_analyt:
-                {}
-              bot85_analyt:
-                {}
-              bot86_analyt:
-                {}
-              bot87_analyt:
-                {}
-              bot88_analyt:
-                {}
-              bot89_analyt:
-                {}
-              bot90_analyt:
-                {}
-              bot91_analyt:
-                {}
-              bot92_analyt:
-                {}
-              bot93_analyt:
-                {}
-              bot94_analyt:
-                {}
-              bot95_analyt:
-                {}
+              bot_center:
+                bot00_analyt:
+                  {}
+                bot01_analyt:
+                  {}
+                bot02_analyt:
+                  {}
+                bot03_analyt:
+                  {}
+                bot04_analyt:
+                  {}
+                bot05_analyt:
+                  {}
+                bot06_analyt:
+                  {}
+                bot07_analyt:
+                  {}
+                bot08_analyt:
+                  {}
+                bot09_analyt:
+                  {}
+                bot10_analyt:
+                  {}
+                bot11_analyt:
+                  {}
+            odom2:
+              {}
       Update Interval: 0
       Value: true
     - Alpha: 0.699999988079071
@@ -583,7 +278,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.8123369216918945
+      Distance: 3.587712287902832
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -591,9 +286,9 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -1.1379684209823608
-        Y: -0.4273737668991089
-        Z: -0.7521805763244629
+        X: 1.087376594543457
+        Y: 0.723082423210144
+        Z: -0.6943723559379578
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -739,5 +434,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 2560
-  X: 0
-  Y: 23
+  X: 8
+  Y: 31

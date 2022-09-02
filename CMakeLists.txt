@@ -255,6 +255,10 @@ catkin_install_python(PROGRAMS scripts/odometry.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
+catkin_install_python(PROGRAMS scripts/odometry2.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 catkin_install_python(PROGRAMS scripts/pc_frame_transform.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

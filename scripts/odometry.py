@@ -114,7 +114,7 @@ class odomBroadcaster:
     def update_des_dir(self, msg):
         data_dict = eval(msg.data)
         self.des_dir = data_dict['dir']
-        V = 0.7
+        V = 0.7 / 2
         self.vx = V * self.des_dir[0]
         self.vy = V * self.des_dir[1]
 
@@ -165,7 +165,7 @@ class odomBroadcaster:
 
 
             delta_x = (self.vx + self.vx_or) * dt / 100
-            delta_y = -(self.vy - self.vy_or) * dt / 100
+            delta_y = -(self.vy + self.vy_or) * dt / 100
 
             self.x += delta_x
             self.y += delta_y

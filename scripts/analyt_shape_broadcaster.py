@@ -69,11 +69,7 @@ class AnalyticModel:
         # self.t.transform.rotation.w = self.imu_quaternions[bot_id, 3]
         self.br.sendTransform(self.t)
 
-    def base_link_pose(self, msg):
-        data_dict = eval(msg.data)
-        self.base_link_pose_x = (data_dict['00'][0] - data_dict[self.origin_tag][0]) / 100
-        self.base_link_pose_y = -(data_dict['00'][1] - data_dict[self.origin_tag][1]) / 100
-        self.base_link_orientation = -(data_dict['00'][2] - data_dict[self.origin_tag][2]) * 3.14 / 180
+
 
     def base_link_robot_loc(self, msg):
         self.base_link_pose_x = msg.transform.rotation.x
@@ -84,17 +80,7 @@ class AnalyticModel:
                                                                       msg.transform.rotation.w)
         self.base_link_orientation = e[2]
 
-    def base_link_odom(self, msg):
-        quaternion = (msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z,
-                      msg.pose.pose.orientation.w)
-        euler = tf.transformations.euler_from_quaternion(quaternion)
-        yaw = euler[2]
-        self.base_link_pose_x = msg.pose.pose.position.x
-        self.base_link_pose_y = msg.pose.pose.position.y
-        self.base_link_orientation = yaw
-        # self.base_link_pose_x += msg.twist.twist.linear.x/1000
-        # self.base_link_pose_y += -msg.twist.twist.linear.y/1000
-        # self.base_link_orientation += msg.twist.twist.angular.z/10
+
 
     def update_imu_quaternions(self, msg):
         bot_id = msg.header.frame_id
@@ -235,6 +221,12 @@ if __name__ == '__main__':
     frame_id = sys.argv[2]
     origin_tag = sys.argv[3]
     estimator_model = sys.argv[4]
+
+    # num_of_bots = 24#sys.argv[1]
+    # frame_id = "odom"#sys.argv[2]
+    # origin_tag = "24"#sys.argv[3]
+    # estimator_model = "rigid_joint"#sys.argv[4]
+
     # child_frames = rospy.get_param('~child_frames')
     broadcaster = AnalyticModel(frame_id, num_of_bots, origin_tag, estimator_model)
     # for i in child_frames:

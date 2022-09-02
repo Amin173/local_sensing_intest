@@ -18,12 +18,13 @@
           args="$(arg num_of_tags) $(arg csv_file)"/>
 
     <!--     Transorms -->
-    <include file="$(find local_sensing_intest)/launch/transforms_replay.launch">
+    <!-- <include file="$(find local_sensing_intest)/launch/transforms_replay.launch">
         <arg name="num_of_bots" value="$(arg num_of_bots)" />
         <arg name="fixed_frame_origin_tag" value="$(arg num_of_bots)" />
         <arg name="odom_est_type" value="rigid_joint" />
-    </include>
-
+    </include> -->
+      <node pkg="tf2_ros" type="static_transform_publisher" name="map_broadcaster"
+          args="0 0 0 0 0 0 world map"/>
     
 
     <!--    Rviz-->
@@ -71,7 +72,8 @@
     <include file="$(find local_sensing_intest)/launch/gmapping.launch"/>
 
     <!-- Odometry -->
-    <node name="odometry" pkg="local_sensing_intest" type="odometry.py" args="$(arg num_of_bots)" respawn="true" output="screen"/>
+    <!-- <node name="odometry" pkg="local_sensing_intest" type="odometry.py" args="$(arg num_of_bots)" respawn="true" output="screen"/> -->
+    <node name="odometry" pkg="local_sensing_intest" type="odometry2.py" args="$(arg num_of_bots) rigid_joint simulated" respawn="true" output="screen"/>
 
     <!--    IMU frame converter-->
     <node name="imu_frame_conversion" pkg="local_sensing_intest" type="imu_frame_conversion.py" respawn="true" args="$(arg num_of_bots)"
