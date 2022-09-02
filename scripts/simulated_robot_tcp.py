@@ -32,7 +32,7 @@ def num_2_str(num):
 
 # Define dummy data for case where csv is not used
 ang_2_q = lambda alf: R.from_euler('z', -alf, degrees=False).as_quat()
-default_dict = lambda n: {"acc": [0., 0., -1.], "rot": ang_2_q((2 * pi * n / (num_tags - 1)) + pi / 2 * (n%2)), "dist": 300 + (random()*100 - 50), 'type': 1}
+default_dict = lambda n: {"acc": [0., 0., -1.], "rot": ang_2_q((2 * pi * n / (num_tags - 1)) - pi / 2 * (n%2)), "dist": 300 + (random()*100 - 50), 'type': 1}
 
 # Returns the positions, angles and ranges at a given time for all bots
 def getTime_data(time, num_bots, data):

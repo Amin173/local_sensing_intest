@@ -73,7 +73,7 @@ def main(num_of_tags, csv_filename):
 
     # Generate offset point
     
-    p0 = array([-3.2454133530086167, 2.8524046300249237, 0.])
+    p0 = array([0, 0, 0.])
 
     # Define dummy data for case where csv is not used
     ang_2_q = lambda alf: R.from_euler('z', -alf, degrees=False).as_matrix()
@@ -90,7 +90,7 @@ def main(num_of_tags, csv_filename):
         p = 30. * array([cos(alf), sin(alf), 0.]) + p0
         
         # Generate angle:
-        ang = _rotation_matrix_to_euler_angles(ang_2_q((2 * pi * i / (int(num_of_tags) - 1)) + pi / 2 * (i%2)) )
+        ang = _rotation_matrix_to_euler_angles(ang_2_q((2 * pi * i / (int(num_of_tags) - 1)) - pi / 2 * (i%2)) )
         p[-1] = ang
 
         if i == num_bots:

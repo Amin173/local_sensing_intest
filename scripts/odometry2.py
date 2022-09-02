@@ -41,10 +41,12 @@ class odomBroadcaster:
                                         0.0, 0.0, 0.0, 0.0, 0.0000, 0.0,
                                         0.0, 0.0, 0.0, 0.0, 0.0, 0.0001]
 
-    offsets_exp_imu = 1 / np.array([-0.07407743-0.99360817j, -0.09855799+0.98938747j, 0.82817443-0.54636922j,
-                        -0.0401674 -0.99429693j, 0.67759265+0.7333606j, 0.61015607-0.79047816j,
-                        0.5362549 +0.83934994j, 0.79984378+0.59549041j, 0.11281897+0.98843956j,
-                        -0.40572821+0.90640207j, 0.96707903-0.20240087j, 0.7568297 -0.64634099j]) * (-1j)
+    offsets_exp_imu = 1 / np.array([ 52694.50175353+57661.40458142j,  65848.6561348 +42018.62351792j,
+                                     -2757.05888699-78063.31989653j,  36186.73233543-69222.5839325j,
+                                     73506.09372357-26423.10766465j,  62052.50245221-47443.57507646j,
+                                     31514.52143423+71469.62970958j,  64353.08234992-44275.04680041j,
+                                     -31740.74226741+71371.41760756j,  43858.63270626+64634.40521362j,
+                                     21682.67061298-75040.96016697j, -25168.84869007+73947.64673571j])
 
     def __init__(self, num_nodes=12, estimator_model='linear', data_source='simulation'):
 
@@ -101,7 +103,7 @@ class odomBroadcaster:
         # Variables to optimize model:
         # Max distance between bots
         self.lmax = .15/2 * np.tan(np.pi / self.num_of_bots) / np.sin(np.pi / 12)
-        self.heading_angle_offsets = np.exp(1j * np.pi / 2 * (np.arange(self.num_of_bots) % 2))
+        self.heading_angle_offsets = np.exp(-1j * np.pi / 2 * (np.arange(self.num_of_bots) % 2))
 
         if type(estimator_model) == None:
             self.estimator_model = 'linear'
@@ -143,15 +145,16 @@ class odomBroadcaster:
 
         # Convert quaternion to angle
         ang_list = [msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w]
+
+        # Store result for the specified bot
         if self.data_source == 'experimental':
-            euler = np.exp(1j * tf.transformations.euler_from_quaternion(ang_list)[-1])
+            euler = np.exp(1j * tf.transformations.euler_from_quaternion(ang_list)[-1]) #* np.exp(1j * np.pi / 2)
         else:
             euler = np.exp(-1j * tf.transformations.euler_from_quaternion(ang_list)[-1])
-
         # Apply filter:
         euler, self.imu_zi[i] =  butter_lowpass_filter(euler, self.filter_a, self.filter_b, self.imu_zi[i])
 
-        # Store result for the specified bot
+        # Store results
         self.vth_imu_data[i] = np.angle(euler / self.th_imu_data[i]) / dt
         self.th_imu_data[i] = euler
 
@@ -174,10 +177,10 @@ class odomBroadcaster:
             xyi = np.array(data_tmp[:2]) - xy0
             if self.data_source == 'experimental':
                 xyi /= 100
+                xyi[1] = -xyi[1]
+                thi = np.exp(-1j * (np.array(data_tmp[2]) - th0) * np.pi / 180)
             else:
-                #xyi[1] = -xyi[1]
-                pass
-            thi = np.exp(-1j * (np.array(data_tmp[2]) - th0) * np.pi / 180)
+                thi = np.exp(-1j * (np.array(data_tmp[2]) - th0) * np.pi / 180)
 
             xy_l = np.hstack((xy_l, xyi.reshape((2, -1))))
             th_l = np.hstack((th_l, [thi]))
@@ -200,10 +203,8 @@ class odomBroadcaster:
     def update_des_dir(self, msg):
         data_dict = eval(msg.data)
         self.control_dir = np.array(data_dict['dir'])
-        try:
+        if self.data_source == 'simulated':
             self.control_actions = np.array(data_dict['actions'])
-        except:
-            pass
 
     def update_control_command(self, msg):
         data_dict = eval(msg.data)
@@ -218,7 +219,7 @@ class odomBroadcaster:
     # Estimates the relative positions of bots given the heading directions
     def analyt_model(self, X, best_fit=True):
         # Bot normal direction angles
-        X = X.reshape(self.num_of_bots)
+        X = X.reshape(self.num_of_bots) * np.exp(-1j * np.pi / 2)
         
         ### Precalculate variables that will later be nidded
         # Calculate difference in angle, constrain between - pi to pi
@@ -287,7 +288,7 @@ class odomBroadcaster:
 
             odom_quat = tf.transformations.quaternion_from_euler(0, 0, np.angle(angles[i]))
             self.odom_broadcaster.sendTransform(
-                (positions[i, 1], positions[i, 0], 0.0),
+                (positions[i, 0], positions[i, 1], 0.0),
                 odom_quat,
                 rospy.Time.now(),
                 "bot" + idx + "_analyt",
@@ -296,7 +297,7 @@ class odomBroadcaster:
 
     def publish_ground_truth(self):
         # generate name
-        angles = self.th_april_data / self.heading_angle_offsets
+        angles = self.th_april_data * self.heading_angle_offsets
         positions = self.xy_april_data
         for i in range(self.num_of_bots):
             idx = self.key(i)
@@ -385,16 +386,16 @@ class odomBroadcaster:
         while np.sum(np.abs(self.control_actions)) < self.num_of_bots:
             self.r.sleep()
         
-        sleep(1.5)
+        sleep(5)
 
         while not rospy.is_shutdown():
             # Get angles for robot
             if self.data_source == 'experimental':
-                angles = self.th_imu_data * np.flip(self.heading_angle_offsets) * np.flip(self.offsets_exp_imu)
+                angles = self.th_imu_data / self.offsets_exp_imu * self.heading_angle_offsets 
                 #angles = self.th_april_data / self.heading_angle_offsets
             else:
-                #angles = self.th_imu_data / self.heading_angle_offsets
-                angles = self.th_april_data * self.heading_angle_offsets
+                angles = self.th_imu_data * self.heading_angle_offsets
+                #angles = self.th_april_data * self.heading_angle_offsets
 
             # Calculate positions of subunits and set center as middle position
             p_rel = self.analyt_model(angles)
