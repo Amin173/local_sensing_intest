@@ -9,9 +9,9 @@
     <!--Define number of bots used in the simulation-->
     <arg name="num_of_bots" default="24"/>
 
-    <arg name="csv_file" default="Example_24_bots.csv" />
+    <arg name="csv_file" default="Example_24_bots_ext2.csv" />
 
-    <arg name="min_datapoints" default="360"/>
+    <arg name="min_datapoints" default="720"/>
 
     <!--     AprilTag -->
     <node name="get_apriltag_data" pkg="local_sensing_intest" type="simulated_apriltag_broadcaster.py" respawn="false"
