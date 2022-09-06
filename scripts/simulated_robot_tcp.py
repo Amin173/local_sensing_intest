@@ -132,7 +132,7 @@ quads = np.array([np.cos(np.linspace(0, np.pi * 2 - np.pi / 6, 12)),
                     np.sin(np.linspace(0, np.pi * 2 - np.pi / 6, 12))]).T
 current_quad = 9
 current_spin = 1
-distance_threshold = 0.1
+distance_threshold = 0.05
 
 def calculateDistancesInDirections(normals, ranges, range_types):
     global quads
@@ -176,7 +176,7 @@ def getNextControl(angles, ranges, range_types):
     # get desired velocities
     tmp = np.dot(norm_bots, ref)
     actions = np.sign(tmp) * 1
-    actions[ranges < distance_threshold / 2 / 1000.] = -1
+    actions[ranges < distance_threshold / 1000.] = -1
     actions[np.arange(num_bots) % 2 == 1] = - current_spin
 
     return actions
@@ -186,7 +186,7 @@ def getNextControl(angles, ranges, range_types):
 
 # Define rate at which to run simulation
 seq = 0
-rate = rospy.Rate(40)
+rate = rospy.Rate(20)
 now = -1.
 while not rospy.is_shutdown() and now < max_time:
     # increment sequence time
