@@ -31,7 +31,7 @@ class dataSaver:
 
     def callback(self, msg):
         try:
-            (trans_estimate, rot_estimate) = listener.lookupTransform('/map', '/bot00_analyt', rospy.Time(0))
+            (trans_estimate, rot_estimate) = listener.lookupTransform('/map', '/bot_center', rospy.Time(0))
             euler_est = tf.transformations.euler_from_quaternion(rot_estimate)
             data.x_est = trans_estimate[0]
             data.y_est = trans_estimate[1]

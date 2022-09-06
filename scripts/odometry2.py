@@ -32,8 +32,6 @@ def butter_lowpass_filter(data, a, b, z=None):
 
 class odomBroadcaster:
 
-    tmp = []
-
     pose_covariance = [0.005, 0.0, 0.0, 0.0, 0.0, 0.0,
                                                0.0, 0.005, 0.0, 0.0, 0.0, 0.0,
                                                0.0, 0.0, 0.0000, 0.0, 0.0, 0.0,
@@ -58,6 +56,7 @@ class odomBroadcaster:
     def __init__(self, num_nodes=12, estimator_model='linear', data_source='simulation'):
 
         self.num_of_bots = num_nodes
+        self.store_data = []
 
         # define initial pose variables, positions and velocities
         self.xy = np.array([float(rospy.get_param('initial_pose/x')), float(rospy.get_param('initial_pose/y'))])
@@ -126,7 +125,7 @@ class odomBroadcaster:
         self.odom_publisher = rospy.Publisher("odom/vel_model", Odometry, queue_size=5)
 
         #self.pub_ground_truth = rospy.Publisher("odom/vel_model", PoseWithCovarianceStamped, queue_size=5)
-        #self.pub_ground_truth = rospy.Publisher("pose/ground_truth", PoseWithCovarianceStamped, queue_size=5)
+        self.pub_ground_truth = rospy.Publisher("pose/ground_truth", PoseWithCovarianceStamped, queue_size=5)
         #self.pub_ground_truth = rospy.Publisher("pose/ground_truth", Odometry, queue_size=5)
 
         # Subscribers
@@ -142,6 +141,9 @@ class odomBroadcaster:
 
         # Subscriber for controller
         rospy.Subscriber("locomotion_stats", String, self.update_des_dir)
+
+        # TF listener
+        self.tf_listener = tf.TransformListener()
 
         
         
@@ -332,14 +334,35 @@ class odomBroadcaster:
             )
 
         
-        odom_quat = tf.transformations.quaternion_from_euler(0, 0, 0)
-        self.odom_broadcaster.sendTransform(
-            (np.average(positions[:, 0]), np.average(positions[:, 1]), 0.0),
-            odom_quat,
-            rospy.Time.now(),
-            "bot_center_true",
-            "map"
-        )
+        # odom_quat = tf.transformations.quaternion_from_euler(0, 0, 0)
+        # self.odom_broadcaster.sendTransform(
+        #     (np.average(positions[:, 0]), np.average(positions[:, 1]), 0.0),
+        #     odom_quat,
+        #     rospy.Time.now(),
+        #     "bot_center",
+        #     "map"
+        # )
+
+        ground_truth = PoseWithCovarianceStamped()
+        ground_truth.header.frame_id = 'map'
+        ground_truth.header.stamp = rospy.Time.now()
+        q = tf.transformations.quaternion_from_euler(0, 0, 0)
+        ground_truth.pose.pose.position.x = np.average(positions[:, 0])
+        ground_truth.pose.pose.position.y = np.average(positions[:, 1])
+        ground_truth.pose.pose.position.z = 0
+        ground_truth.pose.pose.orientation.x = q[0]
+        ground_truth.pose.pose.orientation.y = q[1]
+        ground_truth.pose.pose.orientation.z = q[2]
+        ground_truth.pose.pose.orientation.w = q[3]
+        pose_covariance = [0.01, 0.0, 0.0, 0.0, 0.0, 0.0,
+                           0.0, 0.01, 0.0, 0.0, 0.0, 0.0,
+                           0.0, 0.0, 0.0000, 0.0, 0.0, 0.0,
+                           0.0, 0.0, 0.0, 0.0000, 0.0, 0.0,
+                           0.0, 0.0, 0.0, 0.0, 0.0000, 0.0,
+                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0001]
+
+        ground_truth.pose.covariance = pose_covariance
+        self.pub_ground_truth.publish(ground_truth)
 
     def estimate_odometry(self, positions, angles):
         # Get time from prevous odometry
@@ -383,7 +406,7 @@ class odomBroadcaster:
                 "odom"
             )     
 
-        # self.odom_broadcaster.sendTransform(
+        # self.pub_ground_truth.sendTransform(
         #         (self.xy[0], self.xy[1], 0.0),
         #         odom_quat,
         #         current_time,
@@ -438,12 +461,34 @@ class odomBroadcaster:
             # Now calculate odometry:
             self.estimate_odometry(p_rel, angles)
 
-            self.tmp.append(np.concatenate((self.xy_april_data.flatten(), self.vxvy_april_data.flatten(), np.real(self.th_april_data * self.heading_angle_offsets),
-                                            np.imag(self.th_april_data * self.heading_angle_offsets), np.array(self.control_actions).flatten(), np.array(self.control_dir).flatten())))
+
+            try:
+                
+                (trans, rot) = self.tf_listener.lookupTransform('/odom', '/bot_center', rospy.Time(0))
+                trans = np.array(trans)[:2]
+                rot = tf.transformations.euler_from_quaternion(rot)[-1]
+                
+                c = np.cos(rot)
+                s = np.sin(rot)
+                R = np.array([[c, s], [-s, c]])
+
+                p_l = (R @ p_rel.T).T + trans
+                t_l = angles * np.exp(1j * rot)
+                t_l = np.vstack((np.real(angles), np.imag(angles))).T
+
+                save_data = np.concatenate((self.xy_april_data.flatten(), self.vxvy_april_data.flatten(),
+                                            np.real(self.th_april_data * self.heading_angle_offsets).flatten(),
+                                            np.imag(self.th_april_data * self.heading_angle_offsets).flatten(),
+                                            np.array(self.control_actions).flatten(), np.array(self.control_dir).flatten(),
+                                            p_l.flatten(), t_l.flatten()))
+                self.store_data.append(save_data)
+            except:
+                rospy.logerr('Could not store simulation data')
 
             self.r.sleep()
-        self.tmp = np.array(self.tmp)
-        np.savetxt('/opt/ros/overlay_ws/RAL-files/Test.csv', self.tmp, delimiter=',')
+        #self.store_data = np.array(self.store_data)
+        
+        np.savetxt('/opt/ros/overlay_ws/RAL-files/Test.csv', self.store_data[3:], delimiter=',')
 
 
 if __name__ == '__main__':
