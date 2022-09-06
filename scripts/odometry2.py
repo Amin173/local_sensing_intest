@@ -12,7 +12,8 @@ from numpy import array
 import sys
 from time import sleep, time
 import tf_conversions
-from scipy.signal import butter, lfilter, freqz, bessel
+import tf2_ros
+from scipy.signal import butter, lfilter, freqz, bessel, lfiltic
 
 
 def butter_lowpass(cutoff, fs, order=5):
@@ -22,7 +23,11 @@ def butter_lowpass(cutoff, fs, order=5):
     return b, a
 
 def butter_lowpass_filter(data, a, b, z=None):
-    y = lfilter(b, a, np.array(data).reshape(-1), zi=z)
+    if isinstance(z, type(None)):
+            z = lfiltic(b, a, data)
+            y = data
+    else:
+        y, z = lfilter(b, a, np.array(data).reshape(-1), zi=z)
     return y, z
 
 class odomBroadcaster:
@@ -30,23 +35,25 @@ class odomBroadcaster:
     tmp = []
 
     pose_covariance = [0.005, 0.0, 0.0, 0.0, 0.0, 0.0,
-                        0.0, 0.005, 0.0, 0.0, 0.0, 0.0,
-                        0.0, 0.0, 0.0000, 0.0, 0.0, 0.0,
-                        0.0, 0.0, 0.0, 0.0005, 0.0, 0.0,
-                        0.0, 0.0, 0.0, 0.0, 0.0005, 0.0,
-                        0.0, 0.0, 0.0, 0.0, 0.0, 0.000]
+                                               0.0, 0.005, 0.0, 0.0, 0.0, 0.0,
+                                               0.0, 0.0, 0.0000, 0.0, 0.0, 0.0,
+                                               0.0, 0.0, 0.0, 0.0000, 0.0, 0.0,
+                                               0.0, 0.0, 0.0, 0.0, 0.0000, 0.0,
+                                               0.0, 0.0, 0.0, 0.0, 0.0, 0.00001]
 
-    twist_covariance = [100, 0.0, 0.0, 0.0, 0.0, 0.0,
-                        0.0, 100, 0.0, 0.0, 0.0, 0.0,
-                        0.0, 0.0, 0.0000, 0.0, 0.0, 0.0,
-                        0.0, 0.0, 0.0, 0.0000, 0.0, 0.0,
-                        0.0, 0.0, 0.0, 0.0, 0.0000, 0.0,
-                        0.0, 0.0, 0.0, 0.0, 0.0, 100]
+    twist_covariance = [0.00001, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                        0.0, 0.00001, 0.0, 0.0, 0.0, 0.0,
+                                        0.0, 0.0, 0.0000, 0.0, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 0.0000, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 0.0, 0.0000, 0.0,
+                                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0001]
 
     offsets_exp_imu = 1 / np.array([ 0.7568297 +0.64634099j, 0.96707903+0.20240087j, -0.40572821-0.90640207j,
                                     0.11281897-0.98843956j, 0.79984378-0.59549041j, 0.5362549 -0.83934994j,
                                     0.61015607+0.79047816j, 0.67759265-0.7333606j, -0.0401674 +0.99429693j,
                                     0.82817443+0.54636922j, -0.09855799-0.98938747j, -0.07407743+0.99360817j])
+
+    counter = 0
 
     def __init__(self, num_nodes=12, estimator_model='linear', data_source='simulation'):
 
@@ -72,7 +79,7 @@ class odomBroadcaster:
 
         # Filters
         fs = 5         #Copy from simulated_robot_tcp.py
-        cutoff = 1.4    #Hz
+        cutoff = .8    #Hz
         self.filter_b, self.filter_a = butter_lowpass(cutoff, fs, order=2)
         self.imu_zi = [None] * self.num_of_bots
 
@@ -117,7 +124,10 @@ class odomBroadcaster:
 
         # Publishers
         self.odom_publisher = rospy.Publisher("odom/vel_model", Odometry, queue_size=5)
-        self.pub_ground_truth = rospy.Publisher("pose/ground_truth", PoseWithCovarianceStamped, queue_size=5)
+
+        #self.pub_ground_truth = rospy.Publisher("odom/vel_model", PoseWithCovarianceStamped, queue_size=5)
+        #self.pub_ground_truth = rospy.Publisher("pose/ground_truth", PoseWithCovarianceStamped, queue_size=5)
+        #self.pub_ground_truth = rospy.Publisher("pose/ground_truth", Odometry, queue_size=5)
 
         # Subscribers
         # Subscriber for apriltags
@@ -153,9 +163,10 @@ class odomBroadcaster:
             euler = np.exp(1j * tf.transformations.euler_from_quaternion(ang_list)[-1]) / self.offsets_exp_imu[i]
         else:
             euler = np.exp(-1j * tf.transformations.euler_from_quaternion(ang_list)[-1])
+            
         # Apply filter:
-        #euler, self.imu_zi[i] =  butter_lowpass_filter(euler, self.filter_a, self.filter_b, self.imu_zi[i])
-        #euler /= np.abs(euler)
+        euler, self.imu_zi[i] =  butter_lowpass_filter(euler, self.filter_a, self.filter_b, self.imu_zi[i])
+        euler /= np.abs(euler)
 
         # Store results
         self.vth_imu_data[i] = np.angle(euler / self.th_imu_data[i]) / dt
@@ -202,24 +213,27 @@ class odomBroadcaster:
             self.th_imu_data = self.th_april_data
 
             self.publish_rel_poisitions(self.xy_april_data, self.th_april_data * self.heading_angle_offsets)
-            #self.publish_ground_truth()
+            self.publish_ground_truth()
             
 
     # Update controller info
     def update_des_dir(self, msg):
         data_dict = eval(msg.data)
-        self.control_dir = np.array(data_dict['dir'])
         if self.data_source == 'simulated':
+            self.control_dir = np.array(data_dict['dir'])
             self.control_actions = np.array(data_dict['actions'])
+        else:
+            self.control_dir = np.array([data_dict['dir'][0], -data_dict['dir'][1]])
 
     def update_control_command(self, msg):
-        data_dict = eval(msg.data)
+        if self.data_source == 'experimental':
+            data_dict = eval(msg.data)
 
-        tmp = []
-        for i in range(self.num_of_bots):
-            tmp.append(data_dict[self.key(i)][0])
-        
-        self.control_actions = np.array(tmp)
+            tmp = []
+            for i in range(self.num_of_bots):
+                tmp.append( -np.array(data_dict[self.key(i)][0]))
+            
+            self.control_actions = np.array(tmp)
 
 
     # Estimates the relative positions of bots given the heading directions
@@ -239,7 +253,7 @@ class odomBroadcaster:
         if self.estimator_model == 'rigid_joint':
             L = 2 * self.lmax * np.cos(.5 * diff)
         elif self.estimator_model == 'linear':         # ransac regressor
-            L = (155.93 - 0.8547 * 180 / np.pi * np.abs(diff)) / 1000.
+            L = (155.93 - 0.8547 * 180 / np.pi * np.abs(diff)) / 1000. * 12 / self.num_of_bots
         else:
             L = 12**2 / self.num_of_bots/1000
 
@@ -305,40 +319,21 @@ class odomBroadcaster:
         # generate name
         angles = self.th_april_data * self.heading_angle_offsets
         positions = self.xy_april_data
-        # for i in range(self.num_of_bots):
-        #     idx = self.key(i)
+        for i in range(self.num_of_bots):
+            idx = self.key(i)
 
-        #     odom_quat = tf.transformations.quaternion_from_euler(0, 0, np.angle(angles[i]))
-        #     self.pub_ground_truth.sendTransform(
-        #         (positions[i, 0], positions[i, 1], 0.0),
-        #         odom_quat,
-        #         rospy.Time.now(),
-        #         "bot" + idx + "_true",
-        #         "map"
-        #     )
+            odom_quat = tf.transformations.quaternion_from_euler(0, 0, np.angle(angles[i]))
+            self.odom_broadcaster.sendTransform(
+                (positions[i, 0], positions[i, 1], 0.0),
+                odom_quat,
+                rospy.Time.now(),
+                "bot" + idx + "_true",
+                "map"
+            )
 
-        # ground_truth = PoseWithCovarianceStamped()
-        # ground_truth.header.frame_id = 'map'
-        # ground_truth.header.stamp = rospy.Time.now()
-        # q = tf.transformations.quaternion_from_euler(0, 0, 0.)
-        # ground_truth.pose.pose.position.x = np.average(positions[:, 0])
-        # ground_truth.pose.pose.position.y = np.average(positions[:, 1])
-        # ground_truth.pose.pose.position.z = 0
-        # ground_truth.pose.pose.orientation.x = q[0]
-        # ground_truth.pose.pose.orientation.y = q[1]
-        # ground_truth.pose.pose.orientation.z = q[2]
-        # ground_truth.pose.pose.orientation.w = q[3]
-        # pose_covariance = [0.1, 0.0, 0.0, 0.0, 0.0, 0.0,
-        #                 0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
-        #                 0.0, 0.0, 0.0000, 0.0, 0.0, 0.0,
-        #                 0.0, 0.0, 0.0, 0.0000, 0.0, 0.0,
-        #                 0.0, 0.0, 0.0, 0.0, 0.0000, 0.0,
-        #                 0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
-        # ground_truth.pose.covariance = pose_covariance
-        #self.pub_ground_truth.publish(ground_truth)
         
         odom_quat = tf.transformations.quaternion_from_euler(0, 0, 0)
-        self.pub_ground_truth.sendTransform(
+        self.odom_broadcaster.sendTransform(
             (np.average(positions[:, 0]), np.average(positions[:, 1]), 0.0),
             odom_quat,
             rospy.Time.now(),
@@ -353,15 +348,14 @@ class odomBroadcaster:
         self.time_odom = current_time
 
         # Calculate desired direction velocity
-        des_dir = self.control_dir * .7
-
+        des_dir = self.control_dir * .015 / 2
         # Convert angles to wheel directions, then calculate the forces produced based on the control actions
-        n = np.vstack((np.imag(angles * self.heading_angle_offsets),
-                       np.real(angles * self.heading_angle_offsets))).T
-        forces = n.T * self.control_actions * 0.02  #0.011
+        n = np.vstack((np.imag(angles / self.heading_angle_offsets),
+                       np.real(angles / self.heading_angle_offsets))).T
+        forces = n.T * self.control_actions * .015 / 2 #0.011
 
         # Convert actions into estimated results
-        est_translation = np.average(forces, axis=1)
+        est_translation = des_dir #np.average(forces, axis=1)
 
         true_velocity = np.linalg.norm(np.average(self.vxvy_april_data, axis=0))
         #rospy.logerr("Average scalar: %s", str(true_velocity / np.linalg.norm(est_translation)))
@@ -373,6 +367,7 @@ class odomBroadcaster:
         # Calculate odometry position and rotation
         self.xy += est_translation * dt
         self.th += est_rotation * dt
+        
 
         # Calculate odometry velocity and rotational velocity
         self.vxvy = est_translation
@@ -386,16 +381,15 @@ class odomBroadcaster:
                 current_time,
                 "bot_center",
                 "odom"
-            )
+            )     
 
-        odom_quat = tf.transformations.quaternion_from_euler(0, 0, self.th)
-        self.odom_broadcaster.sendTransform(
-                (self.xy[0], self.xy[1], 0.0),
-                odom_quat,
-                current_time,
-                "odom2",
-                "map"
-            )
+        # self.odom_broadcaster.sendTransform(
+        #         (self.xy[0], self.xy[1], 0.0),
+        #         odom_quat,
+        #         current_time,
+        #         "odom2",
+        #         "map"
+        #     )
             
 
         # next, we'll publish the odometry message over ROS
@@ -410,8 +404,8 @@ class odomBroadcaster:
         # set the velocity
         odom.child_frame_id = "bot_center"
         odom.twist.twist = Twist(
-            Vector3(est_translation[0], est_translation[1], 0),
-            Vector3(0, 0, est_rotation))
+           Vector3(est_translation[0], est_translation[1], 0),
+           Vector3(0, 0, est_rotation))
         odom.twist.covariance = self.twist_covariance
 
         # publish the message
@@ -422,47 +416,34 @@ class odomBroadcaster:
 
         # First wait for initial data to appear:
         while self.startup_sequence:
-            self.r.sleep()
-        
-        sleep(2)
+          sleep(.05)
 
         while not rospy.is_shutdown():
 
-            t0 = time()
             # Get angles for robot
-            #angles = self.th_imu_data * self.heading_angle_offsets
-            angles = self.th_april_data * self.heading_angle_offsets
+            if self.data_source == "experimental":
+                angles = self.th_imu_data * self.heading_angle_offsets
+            else:
+                angles = self.th_april_data * self.heading_angle_offsets
 
             # Calculate positions of subunits and set center as middle position
-            p_rel = self.analyt_model(angles, False)
+            p_rel = self.analyt_model(angles, True)
             p_rel -= np.average(p_rel, axis=0)
-
-            t1 = time()
 
             # Publish relative positions
             self.publish_rel_poisitions(p_rel, angles)
 
-            t2 = time()
-
-            # self.publish_ground_truth()
-
-            t3 = time()
+            #self.publish_ground_truth()
 
             # Now calculate odometry:
-            #try:
             self.estimate_odometry(p_rel, angles)
 
-            t4 = time()
-            #except:
-            #    rospy.logerr("Could not publish odometry")
-
-            # self.tmp.append([t0, t1, t2, t3, t4])
-
-            # rospy.logerr("Average time: %s", str(np.average(self.tmp)))
+            self.tmp.append(np.concatenate((self.xy_april_data.flatten(), self.vxvy_april_data.flatten(), np.real(self.th_april_data * self.heading_angle_offsets),
+                                            np.imag(self.th_april_data * self.heading_angle_offsets), np.array(self.control_actions).flatten(), np.array(self.control_dir).flatten())))
 
             self.r.sleep()
-        
-        #np.savetxt('/opt/ros/overlay_ws/RAL-files/Test.csv', self.tmp, delimiter=',')
+        self.tmp = np.array(self.tmp)
+        np.savetxt('/opt/ros/overlay_ws/RAL-files/Test.csv', self.tmp, delimiter=',')
 
 
 if __name__ == '__main__':

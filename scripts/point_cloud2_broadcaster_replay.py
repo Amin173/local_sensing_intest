@@ -24,8 +24,8 @@ class Cloud:
         self.num_points = num_points
         self.points = []
         self.seq = 0
-        self.xm = 0
-        self.ym = 0
+        self.xm = 0.
+        self.ym = 0.
         self.cloud_pub = rospy.Publisher('cloud_in', PointCloud2, queue_size=3)
 
     def callback(self, msg, bot_id):
@@ -44,8 +44,7 @@ class Cloud:
             r = int(self.ps_transformed.point.x * 255.0)
             g = int(self.ps_transformed.point.y * 255.0)
             b = int(self.ps_transformed.point.z * 255.0)
-            a = (
-                        self.ps_transformed.point.x ** 2 + self.ps_transformed.point.y ** 2 + self.ps_transformed.point.z ** 2) ** 0.5
+            a = (self.ps_transformed.point.x ** 2 + self.ps_transformed.point.y ** 2 + self.ps_transformed.point.z ** 2) ** 0.5
             pt = [self.ps_transformed.point.x, self.ps_transformed.point.y, self.ps_transformed.point.z, r, g, b, a]
             self.points.append(pt)
             if len(self.points) == (self.stacking_factor * self.num_points):
@@ -54,7 +53,7 @@ class Cloud:
                 self.cloud.header.frame_id = "odom"
                 self.cloud.header.seq = self.seq
                 self.cloud.header.stamp = rospy.Time.now()
-                cloud_transformed = transform_cloud(cloud_in=self.cloud, target_frame="bot00_analyt",
+                cloud_transformed = transform_cloud(cloud_in=self.cloud, target_frame="bot_center",
                                                     time=rospy.Time(0))
                 self.cloud_pub.publish(cloud_transformed)
                 self.seq += 1

@@ -2,7 +2,7 @@
 
     <arg name="scan_topic" default="scan"/>
 
-        <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
+    <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
 
         <param name="odom_frame" value="odom"/>
         <param name="base_frame" value="bot_center"/>
@@ -19,7 +19,7 @@
         <!-- The maximum range of the sensor. If regions with no obstacles within the range of the sensor should appear as free space in the map, set maxUrange < maximum range of the real sensor <= maxRange -->
         <param name="maxRange" value="4.0"/> <!--4-->
 
-        <param name="sigma" value="0.05"/>
+        <param name="sigma" value="0.005"/>
         <param name="kernelSize" value="1"/>
         <param name="lstep" value="0.05"/>
         <param name="astep" value="0.05"/>
@@ -45,7 +45,7 @@
         <param name="resampleThreshold" value="0.01"/>
 
         <!-- Number of particles in the filter. default 30        -->
-        <param name="particles" value="200"/> <!--30-->
+        <param name="particles" value="100"/> <!--30-->
 
         <!-- Initial map size  -->
         <param name="xmin" value="0.0"/>

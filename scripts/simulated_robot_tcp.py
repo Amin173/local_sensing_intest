@@ -40,7 +40,7 @@ def getTime_data(time, num_bots, data):
     file_dt = data[1, 0] - data[0, 0]
 
     # calculate index for given time and timestep:
-    idx = int(np.round(time / file_dt * .5, 0))
+    idx = int(np.round(time / file_dt * 1., 0))
 
     tmp = data[idx, 1:].reshape((num_bots, 8))
 
@@ -132,7 +132,7 @@ quads = np.array([np.cos(np.linspace(0, np.pi * 2 - np.pi / 6, 12)),
                     np.sin(np.linspace(0, np.pi * 2 - np.pi / 6, 12))]).T
 current_quad = 9
 current_spin = 1
-distance_threshold = 0.05
+distance_threshold = 0.1
 
 def calculateDistancesInDirections(normals, ranges, range_types):
     global quads
@@ -144,7 +144,7 @@ def calculateDistancesInDirections(normals, ranges, range_types):
     #proj_distances = np.multiply(ranges, cosines.T)
     average_distances = []
     for c, d in zip(cosines.T, proj_distances):
-        av_dist = np.average(d[c > np.cos(np.pi / 4)])
+        av_dist = np.average(d[c > np.cos(np.pi / 6)])
         average_distances.append(av_dist)
 
     return [average_distances[(current_quad - 2) % 12],
@@ -176,15 +176,17 @@ def getNextControl(angles, ranges, range_types):
     # get desired velocities
     tmp = np.dot(norm_bots, ref)
     actions = np.sign(tmp) * 1
-    actions[ranges < distance_threshold * .5 / 1000.] = -1
-    actions[np.arange(0, num_bots, 2)] = current_spin * 1
+    actions[ranges < distance_threshold / 2 / 1000.] = -1
+    actions[np.arange(num_bots) % 2 == 1] = - current_spin
 
     return actions
 
 
+
+
 # Define rate at which to run simulation
 seq = 0
-rate = rospy.Rate(10)
+rate = rospy.Rate(40)
 now = -1.
 while not rospy.is_shutdown() and now < max_time:
     # increment sequence time
@@ -200,16 +202,17 @@ while not rospy.is_shutdown() and now < max_time:
         
         actions = getNextControl(angles, ranges, range_types)
 
-        publish_locomotion(quads[current_quad], actions)
+        if seq > 10 and seq % 4 == 0:
+            publish_locomotion(quads[current_quad], actions)
 
-        # for each tag generate data and publish
-        for i, (imu_p, range_p, imu_d, range_d, type_d) in enumerate(zip(imu_pubs, range_pubs, angles, ranges, range_types)):
-            
-            data_dict = {"acc": [0., 0., -1.], "rot": ang_2_q((imu_d + pi / 2 * (i%2))), "dist": range_d * 1000, "type": type_d}
-            
-            dev_id_str = num_2_str(i)
+            # for each tag generate data and publish
+            for i, (imu_p, range_p, imu_d, range_d, type_d) in enumerate(zip(imu_pubs, range_pubs, angles, ranges, range_types)):
+                
+                data_dict = {"acc": [0., 0., -1.], "rot": ang_2_q((imu_d + pi / 2 * (i%2))), "dist": range_d * 1000, "type": type_d}
+                
+                dev_id_str = num_2_str(i)
 
-            # Publish data for tag
-            publish_imu(imu_p, dev_id_str, data_dict, seq)
-            publish_range(range_p, dev_id_str, data_dict, seq)
+                # Publish data for tag
+                publish_imu(imu_p, dev_id_str, data_dict, seq)
+                publish_range(range_p, dev_id_str, data_dict, seq)
     rate.sleep()

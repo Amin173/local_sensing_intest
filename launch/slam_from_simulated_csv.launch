@@ -4,12 +4,12 @@
 
 <launch>
 
-    <arg name="num_of_tags" default="25"/>
+    <arg name="num_of_tags" default="13"/>
     
     <!--Define number of bots used in the simulation-->
-    <arg name="num_of_bots" default="24"/>
+    <arg name="num_of_bots" default="12"/>
 
-    <arg name="csv_file" default="Example_24_bots_ext2.csv" />
+    <arg name="csv_file" default="Example_12_bots.csv" />
 
     <arg name="min_datapoints" default="720"/>
 
@@ -73,7 +73,7 @@
 
     <!-- Odometry -->
     <!-- <node name="odometry" pkg="local_sensing_intest" type="odometry.py" args="$(arg num_of_bots)" respawn="true" output="screen"/> -->
-    <node name="odometry" pkg="local_sensing_intest" type="odometry2.py" args="$(arg num_of_bots) rigid_joint simulated" respawn="true" output="screen"/>
+    <node name="odometry" pkg="local_sensing_intest" type="odometry2.py" args="$(arg num_of_bots) linear simulated" respawn="true" output="screen"/>
 
     <!--    IMU frame converter-->
     <node name="imu_frame_conversion" pkg="local_sensing_intest" type="imu_frame_conversion.py" respawn="true" args="$(arg num_of_bots)"
