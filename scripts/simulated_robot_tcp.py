@@ -144,7 +144,7 @@ def calculateDistancesInDirections(normals, ranges, range_types):
     #proj_distances = np.multiply(ranges, cosines.T)
     average_distances = []
     for c, d in zip(cosines.T, proj_distances):
-        av_dist = np.average(d[c > np.cos(np.pi / 6)])
+        av_dist = np.average(d[c > np.cos(np.pi / 4)])
         average_distances.append(av_dist)
 
     return [average_distances[(current_quad - 2) % 12],
@@ -185,6 +185,7 @@ def getNextControl(angles, ranges, range_types):
 
 
 # Define rate at which to run simulation
+actions = np.zeros(num_bots)
 seq = 0
 rate = rospy.Rate(20)
 now = -1.
@@ -200,7 +201,8 @@ while not rospy.is_shutdown() and now < max_time:
         positions, angles, ranges, range_types = getTime_data(now, num_bots, csv_data)
         #ranges = np.flip(ranges)
         
-        actions = getNextControl(angles, ranges, range_types)
+        if seq % 2 == 0:
+            actions = getNextControl(angles, ranges, range_types)
 
         if seq > 10 and seq % 4 == 0:
             publish_locomotion(quads[current_quad], actions)

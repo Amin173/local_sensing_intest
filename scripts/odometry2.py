@@ -49,7 +49,7 @@ class odomBroadcaster:
     offsets_exp_imu = 1 / np.array([ 0.7568297 +0.64634099j, 0.96707903+0.20240087j, -0.40572821-0.90640207j,
                                     0.11281897-0.98843956j, 0.79984378-0.59549041j, 0.5362549 -0.83934994j,
                                     0.61015607+0.79047816j, 0.67759265-0.7333606j, -0.0401674 +0.99429693j,
-                                    0.82817443+0.54636922j, -0.09855799-0.98938747j, -0.07407743+0.99360817j])
+                                    0.82817443+0.54636922j, -0.09855799-0.98938747j, -0.07407743+0.99360817j]) * np.exp(-1j*15/180*np.pi)
 
     counter = 0
 
@@ -67,6 +67,7 @@ class odomBroadcaster:
         # Subscriber data variables: angles are stored as complex variables
         self.th_imu_data = np.ones(self.num_of_bots) + 0j
         self.vth_imu_data = np.zeros(self.num_of_bots)
+        self.th_imu_times = np.array([rospy.Time.now().to_sec()] * self.num_of_bots)
 
         self.xy_april_data = np.zeros((self.num_of_bots, 2))
         self.th_april_data = np.ones(self.num_of_bots) + 0j
@@ -78,7 +79,7 @@ class odomBroadcaster:
 
         # Filters
         fs = 5         #Copy from simulated_robot_tcp.py
-        cutoff = .8    #Hz
+        cutoff = .2    #Hz
         self.filter_b, self.filter_a = butter_lowpass(cutoff, fs, order=2)
         self.imu_zi = [None] * self.num_of_bots
 
@@ -88,7 +89,7 @@ class odomBroadcaster:
         self.time_april = tmp
         self.time_odom = tmp
 
-        self.r = rospy.Rate(10)
+        self.r = rospy.Rate(20)
 
         self.startup_sequence = True
 
@@ -163,15 +164,16 @@ class odomBroadcaster:
         # Store result for the specified bot
         if self.data_source == 'experimental':
             euler = np.exp(1j * tf.transformations.euler_from_quaternion(ang_list)[-1]) / self.offsets_exp_imu[i]
+            self.th_imu_times[i] = tmp.to_sec()
         else:
             euler = np.exp(-1j * tf.transformations.euler_from_quaternion(ang_list)[-1])
             
         # Apply filter:
-        euler, self.imu_zi[i] =  butter_lowpass_filter(euler, self.filter_a, self.filter_b, self.imu_zi[i])
-        euler /= np.abs(euler)
+        vel = np.angle(euler / self.th_imu_data[i]) / dt
+        vel, self.imu_zi[i] =  butter_lowpass_filter(vel, self.filter_a, self.filter_b, self.imu_zi[i])
 
         # Store results
-        self.vth_imu_data[i] = np.angle(euler / self.th_imu_data[i]) / dt
+        self.vth_imu_data[i] = vel
         self.th_imu_data[i] = euler 
 
     # Update apriltag data
@@ -375,7 +377,7 @@ class odomBroadcaster:
         # Convert angles to wheel directions, then calculate the forces produced based on the control actions
         n = np.vstack((np.imag(angles / self.heading_angle_offsets),
                        np.real(angles / self.heading_angle_offsets))).T
-        forces = n.T * self.control_actions * .015 / 2 #0.011
+        forces = n.T * self.control_actions * 0.0034#0.000424 #0.011
 
         # Convert actions into estimated results
         est_translation = des_dir #np.average(forces, axis=1)
@@ -385,7 +387,7 @@ class odomBroadcaster:
 
         r = positions - np.average(positions, axis=0)
         est_rotation = np.diagonal(r @ np.array([[0, 1], [-1, 0]]) @ forces)[np.arange(self.num_of_bots) % 2 == 0]
-        est_rotation = np.average(est_rotation)
+        est_rotation = 0*np.average(est_rotation)
 
         # Calculate odometry position and rotation
         self.xy += est_translation * dt
@@ -406,13 +408,13 @@ class odomBroadcaster:
                 "odom"
             )     
 
-        # self.pub_ground_truth.sendTransform(
-        #         (self.xy[0], self.xy[1], 0.0),
-        #         odom_quat,
-        #         current_time,
-        #         "odom2",
-        #         "map"
-        #     )
+        self.odom_broadcaster.sendTransform(
+                (self.xy[0], self.xy[1], 0.0),
+                odom_quat,
+                current_time,
+                "odom2",
+                "map"
+            )
             
 
         # next, we'll publish the odometry message over ROS
@@ -439,12 +441,13 @@ class odomBroadcaster:
 
         # First wait for initial data to appear:
         while self.startup_sequence:
-          sleep(.05)
+          sleep(.01)
 
         while not rospy.is_shutdown():
-
+            
             # Get angles for robot
             if self.data_source == "experimental":
+                self.th_imu_data *= np.exp(1j * self.vth_imu_data * ((rospy.Time.now()).to_sec() - self.th_imu_times))
                 angles = self.th_imu_data * self.heading_angle_offsets
             else:
                 angles = self.th_april_data * self.heading_angle_offsets
@@ -464,7 +467,7 @@ class odomBroadcaster:
 
             try:
                 
-                (trans, rot) = self.tf_listener.lookupTransform('/odom', '/bot_center', rospy.Time(0))
+                (trans, rot) = self.tf_listener.lookupTransform('/map', '/bot_center', rospy.Time(0))
                 trans = np.array(trans)[:2]
                 rot = tf.transformations.euler_from_quaternion(rot)[-1]
                 
@@ -475,10 +478,11 @@ class odomBroadcaster:
                 p_l = (R @ p_rel.T).T + trans
                 t_l = angles * np.exp(1j * rot)
                 t_l = np.vstack((np.real(angles), np.imag(angles))).T
+                ttrue_l = np.vstack((np.real(self.th_april_data * self.heading_angle_offsets),
+                                            np.imag(self.th_april_data * self.heading_angle_offsets))).T
 
                 save_data = np.concatenate((self.xy_april_data.flatten(), self.vxvy_april_data.flatten(),
-                                            np.real(self.th_april_data * self.heading_angle_offsets).flatten(),
-                                            np.imag(self.th_april_data * self.heading_angle_offsets).flatten(),
+                                            ttrue_l.flatten(),
                                             np.array(self.control_actions).flatten(), np.array(self.control_dir).flatten(),
                                             p_l.flatten(), t_l.flatten()))
                 self.store_data.append(save_data)

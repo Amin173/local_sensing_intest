@@ -28,7 +28,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: PointCloud2
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -59,85 +59,35 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        bot00:
-          Value: true
         bot00_analyt:
-          Value: true
-        bot00_true:
-          Value: true
-        bot01:
           Value: true
         bot01_analyt:
           Value: true
-        bot01_true:
-          Value: true
-        bot02:
-          Value: true
         bot02_analyt:
-          Value: true
-        bot02_true:
-          Value: true
-        bot03:
           Value: true
         bot03_analyt:
           Value: true
-        bot03_true:
-          Value: true
-        bot04:
-          Value: true
         bot04_analyt:
-          Value: true
-        bot04_true:
-          Value: true
-        bot05:
           Value: true
         bot05_analyt:
           Value: true
-        bot05_true:
-          Value: true
-        bot06:
-          Value: true
         bot06_analyt:
-          Value: true
-        bot06_true:
-          Value: true
-        bot07:
           Value: true
         bot07_analyt:
           Value: true
-        bot07_true:
-          Value: true
-        bot08:
-          Value: true
         bot08_analyt:
-          Value: true
-        bot08_true:
-          Value: true
-        bot09:
           Value: true
         bot09_analyt:
           Value: true
-        bot09_true:
-          Value: true
-        bot10:
-          Value: true
         bot10_analyt:
           Value: true
-        bot10_true:
-          Value: true
-        bot11:
-          Value: true
         bot11_analyt:
-          Value: true
-        bot11_true:
           Value: true
         bot_center:
           Value: true
         map:
           Value: true
         odom:
-          Value: true
-        odom2:
           Value: true
         world:
           Value: true
@@ -150,30 +100,6 @@ Visualization Manager:
       Tree:
         world:
           map:
-            bot00_true:
-              {}
-            bot01_true:
-              {}
-            bot02_true:
-              {}
-            bot03_true:
-              {}
-            bot04_true:
-              {}
-            bot05_true:
-              {}
-            bot06_true:
-              {}
-            bot07_true:
-              {}
-            bot08_true:
-              {}
-            bot09_true:
-              {}
-            bot10_true:
-              {}
-            bot11_true:
-              {}
             odom:
               bot_center:
                 bot00_analyt:
@@ -200,8 +126,6 @@ Visualization Manager:
                   {}
                 bot11_analyt:
                   {}
-            odom2:
-              {}
       Update Interval: 0
       Value: true
     - Alpha: 0.699999988079071
@@ -326,7 +250,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.6009020805358887
+      Distance: 3.2489442825317383
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -334,9 +258,9 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 1.1818811893463135
-        Y: 0.08093100041151047
-        Z: -0.7271884083747864
+        X: 1.244291067123413
+        Y: 0.6325926184654236
+        Z: -0.6990557312965393
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -482,5 +406,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 2560
-  X: 0
-  Y: 23
+  X: 8
+  Y: 31

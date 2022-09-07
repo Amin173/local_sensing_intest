@@ -7,7 +7,7 @@
     <!--Define number of bots used in the simulation-->
     <arg name="num_of_bots" default="12"/>
 
-    <arg name="min_datapoints" default="360"/>
+    <arg name="min_datapoints" default="720"/>
 
     <!-- <param name="/use_sim_time" value="true" /> -->
 
@@ -40,11 +40,6 @@
     <!--          respawn="true"/>-->
     <node name="pc_feature_extractor" pkg="local_sensing_intest" type="pcl_feature_ext.py" respawn="true"
           output="screen"/>
-
-    
-
-    
-
     
 
     
