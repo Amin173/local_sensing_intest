@@ -209,7 +209,8 @@ while not rospy.is_shutdown() and now < max_time:
 
             # for each tag generate data and publish
             for i, (imu_p, range_p, imu_d, range_d, type_d) in enumerate(zip(imu_pubs, range_pubs, angles, ranges, range_types)):
-                
+                std2 = (4.71 / 180 * np.pi)**2
+                imu_d += np.random.vonmises(0, 1 / std2)
                 data_dict = {"acc": [0., 0., -1.], "rot": ang_2_q((imu_d + pi / 2 * (i%2))), "dist": range_d * 1000, "type": type_d}
                 
                 dev_id_str = num_2_str(i)

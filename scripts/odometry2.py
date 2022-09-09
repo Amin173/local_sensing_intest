@@ -450,7 +450,7 @@ class odomBroadcaster:
                 self.th_imu_data *= np.exp(1j * self.vth_imu_data * ((rospy.Time.now()).to_sec() - self.th_imu_times))
                 angles = self.th_imu_data * self.heading_angle_offsets
             else:
-                angles = self.th_april_data * self.heading_angle_offsets
+                angles = self.th_imu_data * self.heading_angle_offsets
 
             # Calculate positions of subunits and set center as middle position
             p_rel = self.analyt_model(angles, True)
