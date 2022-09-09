@@ -4,12 +4,21 @@
 
 <launch>
 
+<<<<<<< HEAD
     <arg name="num_of_tags" default="13"/>
     
     <!--Define number of bots used in the simulation-->
     <arg name="num_of_bots" default="12"/>
 
     <arg name="csv_file" default="Example_12_bots.csv" />
+=======
+    <arg name="num_of_tags" default="25"/>
+    
+    <!--Define number of bots used in the simulation-->
+    <arg name="num_of_bots" default="24"/>
+
+    <arg name="csv_file" default="Example_24_bots.csv" />
+>>>>>>> e51a3d885526efaf7f4f771560f1af1b4fe377f3
 
     <arg name="min_datapoints" default="360"/>
 
