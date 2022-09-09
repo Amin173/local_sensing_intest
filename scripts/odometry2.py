@@ -59,7 +59,7 @@ class odomBroadcaster:
         self.store_data = []
 
         # define initial pose variables, positions and velocities
-        self.xy = np.array([float(rospy.get_param('initial_pose/x')), float(rospy.get_param('initial_pose/y'))])
+        self.xy = np.array([1.5, .5])#np.array([float(rospy.get_param('initial_pose/x')), float(rospy.get_param('initial_pose/y'))])
         self.th = 0.#float(rospy.get_param('initial_pose/a'))
         self.vxvy = np.array([0., 0.])
         self.vth = 0.0
@@ -79,7 +79,7 @@ class odomBroadcaster:
 
         # Filters
         fs = 5         #Copy from simulated_robot_tcp.py
-        cutoff = .2    #Hz
+        cutoff = .25    #Hz
         self.filter_b, self.filter_a = butter_lowpass(cutoff, fs, order=2)
         self.imu_zi = [None] * self.num_of_bots
 
@@ -258,6 +258,8 @@ class odomBroadcaster:
             L = 2 * self.lmax * np.cos(.5 * diff)
         elif self.estimator_model == 'linear':         # ransac regressor
             L = (155.93 - 0.8547 * 180 / np.pi * np.abs(diff)) / 1000. * 12 / self.num_of_bots
+        elif self.estimator_model == 'linear2':         # ransac regressor
+            L = (158.842 - 0.937 * 180 / np.pi * np.abs(diff)) / 1000. * 12 / self.num_of_bots
         else:
             L = 12**2 / self.num_of_bots/1000
 
@@ -450,6 +452,7 @@ class odomBroadcaster:
                 self.th_imu_data *= np.exp(1j * self.vth_imu_data * ((rospy.Time.now()).to_sec() - self.th_imu_times))
                 angles = self.th_imu_data * self.heading_angle_offsets
             else:
+                #self.th_imu_data *= np.exp(1j * self.vth_imu_data * ((rospy.Time.now()).to_sec() - self.th_imu_times))
                 angles = self.th_imu_data * self.heading_angle_offsets
 
             # Calculate positions of subunits and set center as middle position
